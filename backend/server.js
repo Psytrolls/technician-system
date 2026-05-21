@@ -37,12 +37,23 @@ app.use((req, res) => {
   res.status(404).json({ error: 'הנתיב לא נמצא' });
 });
 
+const db = require('./database');
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'שגיאת שרת פנימית' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-});
+// Initialize database and start server
+db.initDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Failed to initialize database:', err);
+    process.exit(1);
+  });
+
