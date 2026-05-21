@@ -26,7 +26,7 @@ router.get('/summary', authMiddleware, (req, res) => {
   const dateWhere = dateFilter.length ? 'AND ' + dateFilter.join(' AND ') : '';
 
   const totalHours = db.prepare(`
-    SELECT ROUND(SUM(duration_minutes) / 60.0, 1) as total_hours,
+    SELECT ROUND(SUM(duration_minutes) / 60.0, 2) as total_hours,
            COUNT(*) as total_entries
     FROM time_logs tl
     WHERE end_time IS NOT NULL ${userFilter} ${dateWhere}
@@ -35,7 +35,7 @@ router.get('/summary', authMiddleware, (req, res) => {
   const byActivity = db.prepare(`
     SELECT activity_type,
            COUNT(*) as count,
-           ROUND(SUM(duration_minutes) / 60.0, 1) as hours
+           ROUND(SUM(duration_minutes) / 60.0, 2) as hours
     FROM time_logs tl
     WHERE end_time IS NOT NULL ${userFilter} ${dateWhere}
     GROUP BY activity_type
@@ -46,7 +46,7 @@ router.get('/summary', authMiddleware, (req, res) => {
     SELECT u.name,
            u.id,
            COUNT(*) as entries,
-           ROUND(SUM(tl.duration_minutes) / 60.0, 1) as total_hours,
+           ROUND(SUM(tl.duration_minutes) / 60.0, 2) as total_hours,
            ROUND(AVG(tl.duration_minutes), 0) as avg_minutes
     FROM time_logs tl
     JOIN users u ON tl.user_id = u.id
@@ -57,7 +57,7 @@ router.get('/summary', authMiddleware, (req, res) => {
 
   const byDay = db.prepare(`
     SELECT DATE(tl.start_time) as date,
-           ROUND(SUM(tl.duration_minutes) / 60.0, 1) as hours,
+           ROUND(SUM(tl.duration_minutes) / 60.0, 2) as hours,
            COUNT(*) as entries
     FROM time_logs tl
     WHERE tl.end_time IS NOT NULL ${userFilter} ${dateWhere}
