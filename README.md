@@ -129,3 +129,4 @@ technician-system/
 - 🤖 AI לניתוח תקלות חוזרות
 - 📊 אינטגרציה עם Power BI
 - 📱 אפליקציית Android
+# technician-system
