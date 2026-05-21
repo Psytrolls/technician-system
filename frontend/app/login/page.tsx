@@ -74,11 +74,6 @@ export default function LoginPage() {
             {loading ? 'מתחבר...' : 'כניסה'}
           </button>
         </form>
-
-        <div className="mt-6 text-xs text-center" style={{ color: 'var(--muted)' }}>
-          <p>מנהל: admin / admin123</p>
-          <p>טכנאי: david / tech123</p>
-        </div>
       </div>
     </div>
   );
