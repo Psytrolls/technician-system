@@ -314,7 +314,11 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
       {/* Equipment drawer */}
       {showDrawer && (
         <EquipmentDrawer
-          equipment={equipList.filter(e => e.operator_id === selectedOperator || e.operator_id === null)}
+          equipment={equipList.filter(e => {
+            const ids = e.operator_ids ? e.operator_ids.split(',').map(Number) : [];
+            if (ids.length === 0) return true;
+            return selectedOperator ? ids.includes(selectedOperator) : false;
+          })}
           selected={selectedEquip}
           onSelect={setSelectedEquip}
           onClose={() => setShowDrawer(false)}

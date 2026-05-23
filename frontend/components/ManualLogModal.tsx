@@ -259,7 +259,11 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
       {/* Equipment wheel drawer — renders above modal */}
       {showDrawer && (
         <EquipmentDrawer
-          equipment={equipList.filter(e => e.operator_id === selectedOperator || e.operator_id === null)}
+          equipment={equipList.filter(e => {
+            const ids = e.operator_ids ? e.operator_ids.split(',').map(Number) : [];
+            if (ids.length === 0) return true;
+            return selectedOperator ? ids.includes(selectedOperator) : false;
+          })}
           selected={selectedEquip}
           onSelect={setSelectedEquip}
           onClose={() => setShowDrawer(false)}
