@@ -78,3 +78,4 @@ export default function LoginPage() {
     </div>
   );
 }
+// Vercel webhook trigger to force auto-deploy of the brand logo
