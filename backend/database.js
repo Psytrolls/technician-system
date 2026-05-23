@@ -27,6 +27,15 @@ function triggerBackup() {
         });
       }
 
+      // Force SQLite to checkpoint (flush any pending WAL logs to main file)
+      if (activeDb) {
+        try {
+          activeDb.pragma('wal_checkpoint(TRUNCATE)');
+        } catch (e) {
+          console.error('⚠️ Failed to run SQLite WAL checkpoint:', e);
+        }
+      }
+
       // Read current SQLite DB file and save to pg
       const fileData = fs.readFileSync(DB_PATH);
       await pgPool.query(`
@@ -131,7 +140,9 @@ const dbWrapper = {
 
     // Initialize/open the local SQLite database
     activeDb = new Database(DB_PATH);
-    activeDb.pragma('journal_mode = WAL');
+    // Use DELETE instead of WAL to write changes synchronously to the main file,
+    // ensuring the file on disk always contains 100% of latest database changes.
+    activeDb.pragma('journal_mode = DELETE');
     activeDb.pragma('foreign_keys = ON');
 
     // Run existing schema setup, migrations, and seeding
