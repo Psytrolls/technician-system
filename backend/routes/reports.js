@@ -125,20 +125,36 @@ router.get('/export', authMiddleware, adminOnly, (req, res) => {
     'שעת סיום',
     'משך (דקות)',
     'משך (שעות)',
+    'גרף ויזואלי',
     'מיקום',
     'הערות',
     'תיקון ידני',
     'סיבת תיקון',
   ];
 
-  const dataKeys = [
-    'technician_name', 'task_title', 'activity_type', 'date',
-    'start_time', 'end_time', 'duration_minutes', 'duration_hours',
-    'location', 'notes', 'is_manual', 'edit_reason',
+  // Build rows: header row + data rows with dynamic visual graph formulas
+  const rows = [
+    hebrewHeaders,
+    ...logs.map((row, i) => {
+      const rowNum = i + 2; // Excel rows are 1-indexed, headers are row 1
+      return [
+        row.technician_name ?? '',
+        row.task_title ?? '',
+        row.activity_type ?? '',
+        row.date ?? '',
+        row.start_time ?? '',
+        row.end_time ?? '',
+        row.duration_minutes ?? 0,
+        row.duration_hours ?? 0,
+        // Column I: Visual Graph formula based on hours
+        { t: 's', f: `IF(H${rowNum}>0, REPT("█", MIN(50, ROUND(H${rowNum}*4, 0))), "")` },
+        row.location ?? '',
+        row.notes ?? '',
+        row.is_manual ?? '',
+        row.edit_reason ?? '',
+      ];
+    })
   ];
-
-  // Build rows: header row + data rows
-  const rows = [hebrewHeaders, ...logs.map(row => dataKeys.map(k => row[k] ?? ''))];
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
@@ -146,10 +162,13 @@ router.get('/export', authMiddleware, adminOnly, (req, res) => {
   ws['!cols'] = [
     { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
     { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 },
+    { wch: 16 }, // 'גרף ויזואלי'
     { wch: 20 }, { wch: 25 }, { wch: 12 }, { wch: 25 },
   ];
 
-  // Style header row bold (xlsx-style is a separate lib; skip deep styling for now)
+  // Auto-filtering by any column
+  ws['!autofilter'] = { ref: `A1:M${logs.length + 1}` };
+
   // RTL sheet direction
   if (!ws['!sheetView']) ws['!sheetView'] = [{}];
   ws['!sheetView'][0].rightToLeft = true;
@@ -157,24 +176,71 @@ router.get('/export', authMiddleware, adminOnly, (req, res) => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'דוח פעילויות');
 
-  // Summary sheet
+  // Sheet 2: Summary by activity
   const summaryData = db.prepare(`
     SELECT activity_type as 'סוג פעילות',
            COUNT(*) as 'מספר רשומות',
-           ROUND(SUM(duration_minutes)/60.0,1) as 'סה"כ שעות'
+           ROUND(SUM(duration_minutes)/60.0, 2) as 'סה"כ שעות'
     FROM time_logs tl
     WHERE ${where}
     GROUP BY activity_type ORDER BY 3 DESC
   `).all(...params);
 
   if (summaryData.length > 0) {
-    const summaryHeaders = Object.keys(summaryData[0]);
-    const summaryRows = [summaryHeaders, ...summaryData.map(r => summaryHeaders.map(k => r[k] ?? ''))];
+    const summaryHeaders = ['סוג פעילות', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
+    const summaryRows = [
+      summaryHeaders,
+      ...summaryData.map((r, i) => {
+        const rowNum = i + 2;
+        return [
+          r['סוג פעילות'] ?? '',
+          r['מספר רשומות'] ?? 0,
+          r['סה"כ שעות'] ?? 0,
+          // Column D: Visual Graph formula based on total hours
+          { t: 's', f: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
+        ];
+      })
+    ];
     const ws2 = XLSX.utils.aoa_to_sheet(summaryRows);
-    ws2['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }];
+    ws2['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
     if (!ws2['!sheetView']) ws2['!sheetView'] = [{}];
     ws2['!sheetView'][0].rightToLeft = true;
+    ws2['!autofilter'] = { ref: `A1:D${summaryData.length + 1}` };
     XLSX.utils.book_append_sheet(wb, ws2, 'סיכום לפי פעילות');
+  }
+
+  // Sheet 3: Summary by technicians
+  const techData = db.prepare(`
+    SELECT u.name as 'שם טכנאי',
+           COUNT(*) as 'מספר רשומות',
+           ROUND(SUM(tl.duration_minutes)/60.0, 2) as 'סה"כ שעות'
+    FROM time_logs tl
+    JOIN users u ON tl.user_id = u.id
+    WHERE ${where}
+    GROUP BY u.id, u.name ORDER BY 3 DESC
+  `).all(...params);
+
+  if (techData.length > 0) {
+    const techHeaders = ['שם טכנאי', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
+    const techRows = [
+      techHeaders,
+      ...techData.map((r, i) => {
+        const rowNum = i + 2;
+        return [
+          r['שם טכנאי'] ?? '',
+          r['מספר רשומות'] ?? 0,
+          r['סה"כ שעות'] ?? 0,
+          // Column D: Visual Graph formula based on technician hours
+          { t: 's', f: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
+        ];
+      })
+    ];
+    const ws3 = XLSX.utils.aoa_to_sheet(techRows);
+    ws3['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
+    if (!ws3['!sheetView']) ws3['!sheetView'] = [{}];
+    ws3['!sheetView'][0].rightToLeft = true;
+    ws3['!autofilter'] = { ref: `A1:D${techData.length + 1}` };
+    XLSX.utils.book_append_sheet(wb, ws3, 'סיכום לפי טכנאים');
   }
 
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
