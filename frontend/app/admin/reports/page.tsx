@@ -199,8 +199,8 @@ export default function ReportsPage() {
                         nameKey="activity_type"
                         cx="45%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={85}
+                        innerRadius={45}
+                        outerRadius={75}
                         paddingAngle={3}
                         label={({ name, percent }: any) =>
                           percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
