@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { api, getUser } from '@/lib/api';
 import { PlusCircle, Pencil, Trash2, X, BarChart2 } from 'lucide-react';
 
-const EMPTY_FORM = { name: '', category: '', description: '', operator_id: '' };
+const EMPTY_FORM = { name: '', category: '', description: '', operator_ids: [] as string[] };
 
 export default function EquipmentPage() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function EquipmentPage() {
       name: eq.name,
       category: eq.category || '',
       description: eq.description || '',
-      operator_id: eq.operator_id ? String(eq.operator_id) : ''
+      operator_ids: eq.operator_ids ? eq.operator_ids.split(',') : []
     });
     setEditing(eq);
     setError('');
@@ -64,8 +64,10 @@ export default function EquipmentPage() {
     if (!form.name.trim()) { setError('שם נדרש'); return; }
     setSaving(true); setError('');
     const payload = {
-      ...form,
-      operator_id: form.operator_id ? parseInt(form.operator_id) : null
+      name: form.name,
+      category: form.category,
+      description: form.description,
+      operator_ids: form.operator_ids.map(id => parseInt(id)).filter(Boolean)
     };
     try {
       if (modal === 'create') {
@@ -231,17 +233,32 @@ export default function EquipmentPage() {
                   placeholder="למשל: מיזוג אוויר, מחשבים, חשמל..." />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">לקוח מפעיל משויך (סיווג)</label>
-                <select
-                  className="input"
-                  value={form.operator_id}
-                  onChange={e => setForm(f => ({ ...f, operator_id: e.target.value }))}
-                >
-                  <option value="">כללי (זמין לכל הלקוחות)</option>
-                  {operators.map(op => (
-                    <option key={op.id} value={op.id}>{op.name}</option>
-                  ))}
-                </select>
+                <label className="block text-sm font-medium mb-2">לקוחות מפעילים משויכים (זמין עבורם)</label>
+                <div className="flex flex-col gap-2 p-3 rounded-xl border max-h-40 overflow-y-auto" style={{ borderColor: 'var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+                  {operators.map(op => {
+                    const isChecked = form.operator_ids.includes(String(op.id));
+                    return (
+                      <label key={op.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setForm(f => ({ ...f, operator_ids: [...f.operator_ids, String(op.id)] }));
+                            } else {
+                              setForm(f => ({ ...f, operator_ids: f.operator_ids.filter(id => id !== String(op.id)) }));
+                            }
+                          }}
+                        />
+                        <span>{op.name}</span>
+                      </label>
+                    );
+                  })}
+                  {operators.length === 0 && (
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>אין מפעילים פעילים במערכת</span>
+                  )}
+                </div>
+                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>אם לא ייבחר אף מפעיל, סוג המוצר ייחשב כ"כללי" ויופיע לכולם.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">תיאור</label>

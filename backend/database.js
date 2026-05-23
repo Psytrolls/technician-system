@@ -314,6 +314,24 @@ function runMigrationsAndSeeding() {
     }
   } catch (e) {}
 
+  // 6) Create equipment_operators join table and migrate existing data
+  try {
+    activeDb.exec(`
+      CREATE TABLE IF NOT EXISTS equipment_operators (
+        equipment_id INTEGER NOT NULL REFERENCES equipment(id),
+        operator_id INTEGER NOT NULL REFERENCES operators(id),
+        PRIMARY KEY (equipment_id, operator_id)
+      );
+    `);
+    
+    // Copy existing data into join table
+    activeDb.exec(`
+      INSERT OR IGNORE INTO equipment_operators (equipment_id, operator_id)
+      SELECT id, operator_id FROM equipment WHERE operator_id IS NOT NULL;
+    `);
+    console.log('✅ equipment_operators join table created and seeded from equipment table');
+  } catch (e) {}
+
   // 5) Seed default operators if missing
   try {
     const opCount = activeDb.prepare('SELECT COUNT(*) as count FROM operators').get();

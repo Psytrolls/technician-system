@@ -15,14 +15,23 @@ router.get('/', authMiddleware, (req, res) => {
   }
 
   if (operator_id) {
-    conditions.push('(e.operator_id = ? OR e.operator_id IS NULL)');
+    conditions.push(`(
+      e.id IN (SELECT equipment_id FROM equipment_operators WHERE operator_id = ?)
+      OR e.id NOT IN (SELECT equipment_id FROM equipment_operators)
+    )`);
     params.push(parseInt(operator_id));
   }
 
   let query = `
-    SELECT e.*, o.name as operator_name 
+    SELECT e.*, 
+           (SELECT GROUP_CONCAT(o.name, ', ') 
+            FROM equipment_operators eo 
+            JOIN operators o ON eo.operator_id = o.id 
+            WHERE eo.equipment_id = e.id) as operator_name,
+           (SELECT GROUP_CONCAT(eo.operator_id, ',') 
+            FROM equipment_operators eo 
+            WHERE eo.equipment_id = e.id) as operator_ids
     FROM equipment e
-    LEFT JOIN operators o ON e.operator_id = o.id
   `;
 
   if (conditions.length > 0) {
@@ -35,22 +44,30 @@ router.get('/', authMiddleware, (req, res) => {
 
 // POST /api/equipment — admin only
 router.post('/', authMiddleware, adminOnly, (req, res) => {
-  const { name, category, description, operator_id } = req.body;
+  const { name, category, description, operator_ids } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'שם נדרש' });
   const result = db.prepare(
-    'INSERT INTO equipment (name, category, description, operator_id) VALUES (?, ?, ?, ?)'
+    'INSERT INTO equipment (name, category, description) VALUES (?, ?, ?)'
   ).run(
     name.trim(),
     category?.trim() || null,
-    description?.trim() || null,
-    operator_id ? parseInt(operator_id) : null
+    description?.trim() || null
   );
-  res.status(201).json({ id: result.lastInsertRowid, name, category });
+
+  const eqId = result.lastInsertRowid;
+  if (Array.isArray(operator_ids) && operator_ids.length > 0) {
+    const stmt = db.prepare('INSERT INTO equipment_operators (equipment_id, operator_id) VALUES (?, ?)');
+    for (const opId of operator_ids) {
+      if (opId) stmt.run(eqId, parseInt(opId));
+    }
+  }
+
+  res.status(201).json({ id: eqId, name, category });
 });
 
 // PUT /api/equipment/:id — admin only
 router.put('/:id', authMiddleware, adminOnly, (req, res) => {
-  const { name, category, description, active, operator_id } = req.body;
+  const { name, category, description, active, operator_ids } = req.body;
   const eq = db.prepare('SELECT * FROM equipment WHERE id = ?').get(req.params.id);
   if (!eq) return res.status(404).json({ error: 'ציוד לא נמצא' });
   
@@ -59,17 +76,24 @@ router.put('/:id', authMiddleware, adminOnly, (req, res) => {
       name        = ?,
       category    = ?,
       description = ?,
-      active      = ?,
-      operator_id = ?
+      active      = ?
     WHERE id = ?
   `).run(
     name !== undefined ? name : eq.name,
     category !== undefined ? category : eq.category,
     description !== undefined ? description : eq.description,
     active !== undefined ? (active ? 1 : 0) : eq.active,
-    operator_id !== undefined ? (operator_id ? parseInt(operator_id) : null) : eq.operator_id,
     req.params.id
   );
+
+  if (Array.isArray(operator_ids)) {
+    db.prepare('DELETE FROM equipment_operators WHERE equipment_id = ?').run(req.params.id);
+    const stmt = db.prepare('INSERT INTO equipment_operators (equipment_id, operator_id) VALUES (?, ?)');
+    for (const opId of operator_ids) {
+      if (opId) stmt.run(req.params.id, parseInt(opId));
+    }
+  }
+
   res.json({ message: 'עודכן בהצלחה' });
 });
 
