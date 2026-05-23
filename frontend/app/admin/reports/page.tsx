@@ -273,7 +273,7 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart
                       data={summary.by_technician}
-                      margin={{ top: 5, right: 10, left: -10, bottom: 30 }}
+                      margin={{ top: 5, right: 10, left: -10, bottom: 45 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                       <XAxis
