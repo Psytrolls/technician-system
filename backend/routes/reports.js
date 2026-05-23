@@ -1,9 +1,27 @@
 const express = require('express');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
+const https = require('https');
 const db = require('../database');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Helper to fetch chart image buffer safely
+function fetchImageBuffer(url) {
+  return new Promise((resolve) => {
+    https.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        resolve(null);
+        return;
+      }
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    }).on('error', () => {
+      resolve(null);
+    });
+  });
+}
 
 // GET /api/reports/summary — overall stats
 router.get('/summary', authMiddleware, (req, res) => {
@@ -82,8 +100,8 @@ router.get('/summary', authMiddleware, (req, res) => {
   });
 });
 
-// GET /api/reports/export — export real .xlsx with Hebrew headers
-router.get('/export', authMiddleware, adminOnly, (req, res) => {
+// GET /api/reports/export — export gorgeous styled .xlsx with embedded visual charts
+router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   const { date_from, date_to, user_id } = req.query;
   const params = [];
   const filters = ['tl.end_time IS NOT NULL'];
@@ -115,68 +133,126 @@ router.get('/export', authMiddleware, adminOnly, (req, res) => {
     ORDER BY tl.start_time DESC
   `).all(...params);
 
-  // Hebrew column headers
+  // Common borders
+  const cellBorder = {
+    top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+    left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+    right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+  };
+
+  const workbook = new ExcelJS.Workbook();
+
+  // ==========================================
+  // SHEET 1: דוח פעילויות (Activity Report)
+  // ==========================================
+  const ws = workbook.addWorksheet('דוח פעילויות', {
+    views: [{ rightToLeft: true }]
+  });
+
+  ws.columns = [
+    { key: 'technician_name', width: 18 },
+    { key: 'task_title', width: 22 },
+    { key: 'activity_type', width: 16 },
+    { key: 'date', width: 12 },
+    { key: 'start_time', width: 12 },
+    { key: 'end_time', width: 12 },
+    { key: 'duration_minutes', width: 14 },
+    { key: 'duration_hours', width: 14 },
+    { key: 'visual_graph', width: 16 },
+    { key: 'location', width: 20 },
+    { key: 'notes', width: 28 },
+    { key: 'is_manual', width: 12 },
+    { key: 'edit_reason', width: 28 },
+  ];
+
+  // Title Block
+  ws.mergeCells('A1:M1');
+  const titleCell = ws.getCell('A1');
+  titleCell.value = 'דוח פעילויות טכנאים מפורט';
+  titleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+  titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(1).height = 40;
+
+  ws.mergeCells('A2:M2');
+  const subtitleCell = ws.getCell('A2');
+  subtitleCell.value = `טווח תאריכים: ${date_from || 'הכל'} עד ${date_to || 'הכל'}  |  תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}`;
+  subtitleCell.font = { name: 'Segoe UI', size: 11, italic: true, color: { argb: 'FF475569' } };
+  subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+  subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws.getRow(2).height = 25;
+
+  ws.addRow([]); // Blank row
+
+  // Table Headers
   const hebrewHeaders = [
-    'שם טכנאי',
-    'משימה',
-    'סוג פעילות',
-    'תאריך',
-    'שעת התחלה',
-    'שעת סיום',
-    'משך (דקות)',
-    'משך (שעות)',
-    'גרף ויזואלי',
-    'מיקום',
-    'הערות',
-    'תיקון ידני',
-    'סיבת תיקון',
+    'שם טכנאי', 'משימה', 'סוג פעילות', 'תאריך', 'שעת התחלה', 'שעת סיום',
+    'משך (דקות)', 'משך (שעות)', 'גרף ויזואלי', 'מיקום', 'הערות', 'תיקון ידני', 'סיבת תיקון'
   ];
+  
+  const headerRow = ws.addRow(hebrewHeaders);
+  headerRow.height = 30;
+  headerRow.eachCell((cell) => {
+    cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FF475569' } },
+      bottom: { style: 'thin', color: { argb: 'FF475569' } },
+      left: { style: 'thin', color: { argb: 'FF475569' } },
+      right: { style: 'thin', color: { argb: 'FF475569' } }
+    };
+  });
 
-  // Build rows: header row + data rows with dynamic visual graph formulas
-  const rows = [
-    hebrewHeaders,
-    ...logs.map((row, i) => {
-      const rowNum = i + 2; // Excel rows are 1-indexed, headers are row 1
-      return [
-        row.technician_name ?? '',
-        row.task_title ?? '',
-        row.activity_type ?? '',
-        row.date ?? '',
-        row.start_time ?? '',
-        row.end_time ?? '',
-        row.duration_minutes ?? 0,
-        row.duration_hours ?? 0,
-        // Column I: Visual Graph formula based on hours
-        { t: 's', f: `IF(H${rowNum}>0, REPT("█", MIN(50, ROUND(H${rowNum}*4, 0))), "")` },
-        row.location ?? '',
-        row.notes ?? '',
-        row.is_manual ?? '',
-        row.edit_reason ?? '',
-      ];
-    })
-  ];
+  // Table Data
+  logs.forEach((log, index) => {
+    const rowNum = index + 5;
+    const rowData = [
+      log.technician_name ?? '',
+      log.task_title ?? '',
+      log.activity_type ?? '',
+      log.date ?? '',
+      log.start_time ?? '',
+      log.end_time ?? '',
+      log.duration_minutes ?? 0,
+      log.duration_hours ?? 0,
+      { formula: `IF(H${rowNum}>0, REPT("█", MIN(50, ROUND(H${rowNum}*4, 0))), "")` },
+      log.location ?? '',
+      log.notes ?? '',
+      log.is_manual ?? '',
+      log.edit_reason ?? '',
+    ];
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
+    const row = ws.addRow(rowData);
+    row.height = 22;
 
-  // Column widths
-  ws['!cols'] = [
-    { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
-    { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 },
-    { wch: 16 }, // 'גרף ויזואלי'
-    { wch: 20 }, { wch: 25 }, { wch: 12 }, { wch: 25 },
-  ];
+    const isEven = index % 2 === 0;
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      cell.font = { name: 'Segoe UI', size: 10 };
+      cell.border = cellBorder;
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
+      };
 
-  // Auto-filtering by any column
-  ws['!autofilter'] = { ref: `A1:M${logs.length + 1}` };
+      if (colNumber === 7 || colNumber === 8) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      } else if (colNumber === 9) {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF3B82F6' } }; // Beautiful primary blue blocks!
+      } else {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+    });
+  });
 
-  // RTL sheet direction
-  if (!ws['!sheetView']) ws['!sheetView'] = [{}];
-  ws['!sheetView'][0].rightToLeft = true;
+  ws.autoFilter = `A4:M${logs.length + 4}`;
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'דוח פעילויות');
-
-  // Sheet 2: Summary by activity
+  // ==========================================
+  // SHEET 2: סיכום לפי פעילות (Summary by Activity)
+  // ==========================================
   const summaryData = db.prepare(`
     SELECT activity_type as 'סוג פעילות',
            COUNT(*) as 'מספר רשומות',
@@ -186,30 +262,115 @@ router.get('/export', authMiddleware, adminOnly, (req, res) => {
     GROUP BY activity_type ORDER BY 3 DESC
   `).all(...params);
 
+  let pieChartBuffer = null;
   if (summaryData.length > 0) {
-    const summaryHeaders = ['סוג פעילות', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
-    const summaryRows = [
-      summaryHeaders,
-      ...summaryData.map((r, i) => {
-        const rowNum = i + 2;
-        return [
-          r['סוג פעילות'] ?? '',
-          r['מספר רשומות'] ?? 0,
-          r['סה"כ שעות'] ?? 0,
-          // Column D: Visual Graph formula based on total hours
-          { t: 's', f: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
-        ];
-      })
-    ];
-    const ws2 = XLSX.utils.aoa_to_sheet(summaryRows);
-    ws2['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
-    if (!ws2['!sheetView']) ws2['!sheetView'] = [{}];
-    ws2['!sheetView'][0].rightToLeft = true;
-    ws2['!autofilter'] = { ref: `A1:D${summaryData.length + 1}` };
-    XLSX.utils.book_append_sheet(wb, ws2, 'סיכום לפי פעילות');
+    const pieChartConfig = {
+      type: 'pie',
+      data: {
+        labels: summaryData.map(r => r['סוג פעילות']),
+        datasets: [{
+          data: summaryData.map(r => r['סה"כ שעות']),
+          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+        }]
+      },
+      options: {
+        title: {
+          display: true,
+          text: 'חלוקת שעות לפי סוג פעילות',
+          fontSize: 16,
+          fontColor: '#1e293b',
+          fontStyle: 'bold'
+        },
+        legend: {
+          position: 'right',
+          labels: {
+            fontSize: 12,
+            fontColor: '#334155'
+          }
+        }
+      }
+    };
+    const pieUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(pieChartConfig))}&w=450&h=300`;
+    pieChartBuffer = await fetchImageBuffer(pieUrl);
   }
 
-  // Sheet 3: Summary by technicians
+  const ws2 = workbook.addWorksheet('סיכום לפי פעילות', {
+    views: [{ rightToLeft: true }]
+  });
+
+  ws2.columns = [
+    { key: 'activity', width: 20 },
+    { key: 'entries', width: 16 },
+    { key: 'hours', width: 16 },
+    { key: 'graph', width: 18 },
+  ];
+
+  ws2.mergeCells('A1:D1');
+  const t2Cell = ws2.getCell('A1');
+  t2Cell.value = 'סיכום שעות לפי פעילות';
+  t2Cell.font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+  t2Cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+  t2Cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws2.getRow(1).height = 35;
+
+  ws2.addRow([]); // Blank row
+
+  const sHeaders = ['סוג פעילות', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
+  const sHeaderRow = ws2.addRow(sHeaders);
+  sHeaderRow.height = 25;
+  sHeaderRow.eachCell((cell) => {
+    cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = cellBorder;
+  });
+
+  summaryData.forEach((r, i) => {
+    const rowNum = i + 4;
+    const row = ws2.addRow([
+      r['סוג פעילות'] ?? '',
+      r['מספר רשומות'] ?? 0,
+      r['סה"כ שעות'] ?? 0,
+      { formula: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
+    ]);
+    row.height = 22;
+    const isEven = i % 2 === 0;
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      cell.font = { name: 'Segoe UI', size: 10 };
+      cell.border = cellBorder;
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
+      };
+
+      if (colNumber === 2 || colNumber === 3) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      } else if (colNumber === 4) {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF10B981' } }; // Vibrant emerald green blocks!
+      } else {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+    });
+  });
+
+  ws2.autoFilter = `A3:D${summaryData.length + 3}`;
+
+  if (pieChartBuffer) {
+    const pieImgId = workbook.addImage({
+      buffer: pieChartBuffer,
+      extension: 'png'
+    });
+    ws2.addImage(pieImgId, {
+      tl: { col: 5, row: 2 }, // Column F, Row 3
+      ext: { width: 450, height: 300 }
+    });
+  }
+
+  // ==========================================
+  // SHEET 3: סיכום לפי טכנאים (Summary by Technicians)
+  // ==========================================
   const techData = db.prepare(`
     SELECT u.name as 'שם טכנאי',
            COUNT(*) as 'מספר רשומות',
@@ -220,30 +381,118 @@ router.get('/export', authMiddleware, adminOnly, (req, res) => {
     GROUP BY u.id, u.name ORDER BY 3 DESC
   `).all(...params);
 
+  let barChartBuffer = null;
   if (techData.length > 0) {
-    const techHeaders = ['שם טכנאי', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
-    const techRows = [
-      techHeaders,
-      ...techData.map((r, i) => {
-        const rowNum = i + 2;
-        return [
-          r['שם טכנאי'] ?? '',
-          r['מספר רשומות'] ?? 0,
-          r['סה"כ שעות'] ?? 0,
-          // Column D: Visual Graph formula based on technician hours
-          { t: 's', f: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
-        ];
-      })
-    ];
-    const ws3 = XLSX.utils.aoa_to_sheet(techRows);
-    ws3['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 16 }];
-    if (!ws3['!sheetView']) ws3['!sheetView'] = [{}];
-    ws3['!sheetView'][0].rightToLeft = true;
-    ws3['!autofilter'] = { ref: `A1:D${techData.length + 1}` };
-    XLSX.utils.book_append_sheet(wb, ws3, 'סיכום לפי טכנאים');
+    const techChartConfig = {
+      type: 'bar',
+      data: {
+        labels: techData.map(r => r['שם טכנאי']),
+        datasets: [{
+          label: 'סה"כ שעות עבודה',
+          data: techData.map(r => r['סה"כ שעות']),
+          backgroundColor: '#3b82f6',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        title: {
+          display: true,
+          text: 'השוואת שעות עבודה בין טכנאים',
+          fontSize: 16,
+          fontColor: '#1e293b',
+          fontStyle: 'bold'
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            ticks: {
+              beginAtZero: true
+            }
+          }]
+        }
+      }
+    };
+    const barUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(techChartConfig))}&w=450&h=300`;
+    barChartBuffer = await fetchImageBuffer(barUrl);
   }
 
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  const ws3 = workbook.addWorksheet('סיכום לפי טכנאים', {
+    views: [{ rightToLeft: true }]
+  });
+
+  ws3.columns = [
+    { key: 'technician', width: 20 },
+    { key: 'entries', width: 16 },
+    { key: 'hours', width: 16 },
+    { key: 'graph', width: 18 },
+  ];
+
+  ws3.mergeCells('A1:D1');
+  const t3Cell = ws3.getCell('A1');
+  t3Cell.value = 'סיכום שעות לפי טכנאים';
+  t3Cell.font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+  t3Cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+  t3Cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  ws3.getRow(1).height = 35;
+
+  ws3.addRow([]); // Blank row
+
+  const tHeaders = ['שם טכנאי', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
+  const tHeaderRow = ws3.addRow(tHeaders);
+  tHeaderRow.height = 25;
+  tHeaderRow.eachCell((cell) => {
+    cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = cellBorder;
+  });
+
+  techData.forEach((r, i) => {
+    const rowNum = i + 4;
+    const row = ws3.addRow([
+      r['שם טכנאי'] ?? '',
+      r['מספר רשומות'] ?? 0,
+      r['סה"כ שעות'] ?? 0,
+      { formula: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
+    ]);
+    row.height = 22;
+    const isEven = i % 2 === 0;
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      cell.font = { name: 'Segoe UI', size: 10 };
+      cell.border = cellBorder;
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
+      };
+
+      if (colNumber === 2 || colNumber === 3) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      } else if (colNumber === 4) {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF8B5CF6' } }; // Beautiful purple blocks!
+      } else {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+    });
+  });
+
+  ws3.autoFilter = `A3:D${techData.length + 3}`;
+
+  if (barChartBuffer) {
+    const barImgId = workbook.addImage({
+      buffer: barChartBuffer,
+      extension: 'png'
+    });
+    ws3.addImage(barImgId, {
+      tl: { col: 5, row: 2 }, // Column F, Row 3
+      ext: { width: 450, height: 300 }
+    });
+  }
+
+  const buf = await workbook.xlsx.writeBuffer();
 
   const filename = `דוח_טכנאים_${date_from || 'all'}_${date_to || 'all'}.xlsx`;
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
