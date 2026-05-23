@@ -34,7 +34,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
       <div className="card w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-4xl mb-3">🔧</div>
+          <img src="/logo.png" alt="Logo" className="w-16 h-16 mx-auto mb-3 object-contain" />
           <h1 className="text-2xl font-bold">מערכת ניהול טכנאים</h1>
           <p style={{ color: 'var(--muted)' }} className="text-sm mt-1">היכנס לחשבון שלך</p>
         </div>
