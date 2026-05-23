@@ -392,7 +392,8 @@ export default function ReportsPage() {
                     <thead>
                       <tr>
                         <th>טכנאי</th>
-                        <th>רשומות</th>
+                        <th>דיווחים</th>
+                        <th>משימות שהושלמו</th>
                         <th>שעות עבודה</th>
                         <th>ממוצע פעילות</th>
                         <th>עומס יחסי</th>
@@ -414,6 +415,7 @@ export default function ReportsPage() {
                               </div>
                             </td>
                             <td>{t.entries}</td>
+                            <td>{t.completed_tasks ?? 0}</td>
                             <td>{t.total_hours}ש'</td>
                             <td>{t.avg_minutes}ד'</td>
                             <td style={{ width: 160 }}>

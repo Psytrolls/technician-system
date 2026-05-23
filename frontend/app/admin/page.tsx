@@ -245,7 +245,8 @@ export default function AdminDashboard() {
                 <thead>
                   <tr>
                     <th>טכנאי</th>
-                    <th>כניסות</th>
+                    <th>דיווחים</th>
+                    <th>משימות שהושלמו</th>
                     <th>סה"כ שעות</th>
                     <th>ממוצע פעילות (דקות)</th>
                     <th>עומס</th>
@@ -259,6 +260,7 @@ export default function AdminDashboard() {
                       <tr key={t.id}>
                         <td className="font-medium">{t.name}</td>
                         <td>{t.entries}</td>
+                        <td>{t.completed_tasks ?? 0}</td>
                         <td>{t.total_hours}ש'</td>
                         <td>{t.avg_minutes}ד'</td>
                         <td>

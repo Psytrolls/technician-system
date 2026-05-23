@@ -66,7 +66,15 @@ router.get('/summary', authMiddleware, (req, res) => {
            u.id,
            COUNT(*) as entries,
            ROUND(SUM(tl.duration_minutes) / 60.0, 2) as total_hours,
-           ROUND(AVG(tl.duration_minutes), 0) as avg_minutes
+           ROUND(AVG(tl.duration_minutes), 0) as avg_minutes,
+           (
+             SELECT COUNT(*)
+             FROM tasks t
+             WHERE t.assigned_to = u.id
+               AND t.status = 'completed'
+               ${date_from ? `AND DATE(t.updated_at) >= '${date_from}'` : ''}
+               ${date_to ? `AND DATE(t.updated_at) <= '${date_to}'` : ''}
+           ) as completed_tasks
     FROM time_logs tl
     JOIN users u ON tl.user_id = u.id
     WHERE tl.end_time IS NOT NULL ${userFilter} ${dateWhere}
