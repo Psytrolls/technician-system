@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 import { X, Wrench, ChevronDown } from 'lucide-react';
 import EquipmentDrawer from './EquipmentDrawer';
 
-const ACTIVITY_TYPES = ['נסיעה', 'טיפול בתקלה', 'הפסקה', 'אחר'];
+const ACTIVITY_TYPES = ['נסיעה', 'נסיעה למחסן', 'טיפול בתקלה', 'הפסקה', 'אחר'];
 
 // Activity types that require equipment selection
 const EQUIPMENT_ACTIVITIES = new Set(['טיפול בתקלה', 'אחר']);
