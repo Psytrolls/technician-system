@@ -82,9 +82,14 @@ export default function EquipmentPage() {
     } finally { setSaving(false); }
   }
 
-  async function handleToggle(eq: any) {
-    await api.equipment.update(eq.id, { active: !eq.active });
-    loadData();
+  async function handleDelete(eq: any) {
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את סוג המוצר "${eq.name}" לצמיתות?`)) return;
+    try {
+      await api.equipment.delete(eq.id);
+      loadData();
+    } catch (err: any) {
+      alert(err.message || 'שגיאה במחיקת סוג המוצר');
+    }
   }
 
   // Group by category
@@ -155,7 +160,6 @@ export default function EquipmentPage() {
                       <th>תיאור</th>
                       <th>טיפולים</th>
                       <th>שעות</th>
-                      <th>סטטוס</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -163,7 +167,7 @@ export default function EquipmentPage() {
                     {items.map((eq: any) => {
                       const s = statsMap[eq.name];
                       return (
-                        <tr key={eq.id} style={{ opacity: eq.active ? 1 : 0.5 }}>
+                        <tr key={eq.id}>
                           <td className="font-medium">{eq.name}</td>
                           <td className="text-sm">
                             {eq.operator_name ? (
@@ -176,19 +180,14 @@ export default function EquipmentPage() {
                           <td>{s?.service_count || 0}</td>
                           <td>{s?.total_hours || 0}ש'</td>
                           <td>
-                            <span className={`badge ${eq.active ? 'badge-green' : 'badge-gray'}`}>
-                              {eq.active ? 'פעיל' : 'מושבת'}
-                            </span>
-                          </td>
-                          <td>
                             <div className="flex gap-1">
                               <button className="btn btn-ghost p-2" onClick={() => openEdit(eq)}>
                                 <Pencil size={15} />
                               </button>
                               <button
-                                className={`btn p-2 ${eq.active ? 'btn-danger' : 'btn-success'}`}
-                                onClick={() => handleToggle(eq)}
-                                title={eq.active ? 'הסר מהרשימה' : 'החזר לרשימה'}
+                                className="btn btn-danger p-2"
+                                onClick={() => handleDelete(eq)}
+                                title="מחק לצמיתות"
                               >
                                 <Trash2 size={15} />
                               </button>

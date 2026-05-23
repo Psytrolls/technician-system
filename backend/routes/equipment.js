@@ -97,10 +97,20 @@ router.put('/:id', authMiddleware, adminOnly, (req, res) => {
   res.json({ message: 'עודכן בהצלחה' });
 });
 
-// DELETE /api/equipment/:id — admin only (soft)
+// DELETE /api/equipment/:id — admin only (hard delete)
 router.delete('/:id', authMiddleware, adminOnly, (req, res) => {
-  db.prepare('UPDATE equipment SET active = 0 WHERE id = ?').run(req.params.id);
-  res.json({ message: 'הוסר מהרשימה' });
+  const eqId = req.params.id;
+  try {
+    // Delete links from many-to-many join table
+    db.prepare('DELETE FROM equipment_operators WHERE equipment_id = ?').run(eqId);
+    // Unlink equipment from timelogs to maintain statistics safety
+    db.prepare('UPDATE time_logs SET equipment_id = NULL WHERE equipment_id = ?').run(eqId);
+    // Delete the equipment permanently
+    db.prepare('DELETE FROM equipment WHERE id = ?').run(eqId);
+    res.json({ message: 'סוג מוצר נמחק לצמיתות' });
+  } catch (err) {
+    res.status(500).json({ error: 'שגיאה במחיקת סוג המוצר' });
+  }
 });
 
 // GET /api/equipment/stats — admin: usage statistics per equipment
