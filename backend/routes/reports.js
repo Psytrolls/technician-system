@@ -105,12 +105,12 @@ router.get('/summary', authMiddleware, (req, res) => {
     SELECT o.name,
            o.id,
            COUNT(*) as entries,
-           ROUND(SUM(tl.duration_minutes) / 60.0, 2) as total_hours
+           ROUND(SUM(tl.duration_minutes) / 60.0, 2) as hours
     FROM time_logs tl
     JOIN operators o ON tl.operator_id = o.id
     WHERE tl.end_time IS NOT NULL ${userFilter} ${dateWhere}
     GROUP BY o.id
-    ORDER BY total_hours DESC
+    ORDER BY hours DESC
   `).all(...params);
 
   const completionsByDay = db.prepare(`
