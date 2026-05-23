@@ -11,6 +11,21 @@ import { Download } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
+function formatHours(h: number) {
+  if (!h) return '0:00';
+  const totalMins = Math.round(h * 60);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  return `${hrs}:${String(mins).padStart(2, '0')}`;
+}
+
+function formatMinutes(mins: number) {
+  if (!mins) return '0:00';
+  const hrs = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${hrs}:${String(m).padStart(2, '0')}`;
+}
+
 const TOOLTIP_STYLE = {
   contentStyle: { background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 },
   itemStyle: { color: '#f8fafc' },
@@ -151,16 +166,24 @@ export default function ReportsPage() {
             {/* KPI cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
-                { label: 'שעות עבודה', val: `${summary.totals?.total_hours || 0}`, unit: "ש'", color: '#3b82f6' },
-                { label: 'רשומות פעילות', val: summary.totals?.total_entries || 0, unit: '', color: '#22c55e' },
-                { label: 'שעות נסיעה', val: `${travelHours}`, unit: "ש'", color: '#f59e0b' },
-                { label: 'אחוז נסיעה', val: `${travelPct}`, unit: '%', color: '#ef4444' },
+                { label: 'שעות עבודה', val: formatHours(summary.totals?.total_hours || 0), isTime: true, color: '#3b82f6' },
+                { label: 'רשומות פעילות', val: String(summary.totals?.total_entries || 0), isTime: false, color: '#22c55e' },
+                { label: 'שעות נסיעה', val: formatHours(travelHours), isTime: true, color: '#f59e0b' },
+                { label: 'אחוז נסיעה', val: `${travelPct}%`, isTime: false, color: '#ef4444' },
               ].map(item => (
-                <div key={item.label} className="stat-card">
-                  <div className="stat-value" style={{ color: item.color }}>
-                    {item.val}<span className="text-base font-normal">{item.unit}</span>
+                <div key={item.label} className="stat-card" style={{ textAlign: 'center' }}>
+                  <div
+                    className="stat-value"
+                    style={{
+                      color: item.color,
+                      fontFamily: item.isTime ? 'monospace' : 'inherit',
+                      letterSpacing: item.isTime ? '1px' : 'normal'
+                    }}
+                    dir={item.isTime ? 'ltr' : 'rtl'}
+                  >
+                    {item.val}
                   </div>
-                  <div className="stat-label">{item.label}</div>
+                  <div className="stat-label" style={{ marginTop: 4 }}>{item.label}</div>
                 </div>
               ))}
             </div>
@@ -189,7 +212,7 @@ export default function ReportsPage() {
                         labelFormatter={d =>
                           new Date(d + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
                         }
-                        formatter={(v: any) => [`${v} ש'`, 'שעות']}
+                        formatter={(v: any) => [formatHours(v), 'שעות']}
                       />
                       <Line
                         dataKey="hours"
@@ -239,7 +262,7 @@ export default function ReportsPage() {
                       />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any, name: any) => [`${v} ש'`, name]}
+                        formatter={(v: any, name: any) => [formatHours(v), name]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -269,9 +292,9 @@ export default function ReportsPage() {
                       />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any) => [`${v} ש'`, 'שעות']}
+                        formatter={(v: any) => [formatHours(v), 'שעות']}
                       />
-                      <Bar dataKey="hours" radius={[0, 6, 6, 0]} label={{ position: 'right', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v} ש'` }}>
+                      <Bar dataKey="hours" radius={[0, 6, 6, 0]} label={{ position: 'right', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => formatHours(v) }}>
                         {summary.by_activity.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
@@ -301,9 +324,9 @@ export default function ReportsPage() {
                       <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v} ש'`} />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any) => [`${v} ש'`, 'שעות']}
+                        formatter={(v: any) => [formatHours(v), 'שעות']}
                       />
-                      <Bar dataKey="total_hours" radius={[6, 6, 0, 0]} label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v} ש'` }}>
+                      <Bar dataKey="total_hours" radius={[6, 6, 0, 0]} label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => formatHours(v) }}>
                         {summary.by_technician.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
@@ -335,9 +358,9 @@ export default function ReportsPage() {
                       <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v} ש'`} />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any) => [`${v} ש'`, 'שעות עבודה']}
+                        formatter={(v: any) => [formatHours(v), 'שעות עבודה']}
                       />
-                      <Bar dataKey="hours" radius={[6, 6, 0, 0]} fill="#3b82f6" label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v} ש'` }}>
+                      <Bar dataKey="hours" radius={[6, 6, 0, 0]} fill="#3b82f6" label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => formatHours(v) }}>
                         {summary.by_operator.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[(i + 2) % COLORS.length]} />
                         ))}
@@ -414,8 +437,8 @@ export default function ReportsPage() {
                               </div>
                             </td>
                             <td>{t.completed_tasks ?? 0}</td>
-                            <td>{t.total_hours}ש'</td>
-                            <td>{t.avg_minutes}ד'</td>
+                            <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(t.total_hours)}</td>
+                            <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatMinutes(t.avg_minutes)}</td>
                             <td style={{ width: 160 }}>
                               <div className="flex items-center gap-2">
                                 <div

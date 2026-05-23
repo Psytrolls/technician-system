@@ -5,6 +5,14 @@ import Sidebar from '@/components/Sidebar';
 import { api, getUser } from '@/lib/api';
 import { PlusCircle, Pencil, Trash2, X, BarChart2 } from 'lucide-react';
 
+function formatHours(h: number) {
+  if (!h) return '0:00';
+  const totalMins = Math.round(h * 60);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  return `${hrs}:${String(mins).padStart(2, '0')}`;
+}
+
 const EMPTY_FORM = { name: '', category: '', description: '', operator_ids: [] as string[] };
 
 export default function EquipmentPage() {
@@ -134,7 +142,7 @@ export default function EquipmentPage() {
                 >
                   <div className="font-semibold">{s.name}</div>
                   <div style={{ color: 'var(--muted)', fontSize: '0.78rem', marginTop: 2 }}>
-                    {s.service_count} טיפולים · {s.total_hours}ש'
+                    {s.service_count} טיפולים · <span style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(s.total_hours)}</span>
                   </div>
                 </div>
               ))}
@@ -178,7 +186,7 @@ export default function EquipmentPage() {
                           </td>
                           <td className="text-sm" style={{ color: 'var(--muted)' }}>{eq.description || '—'}</td>
                           <td>{s?.service_count || 0}</td>
-                          <td>{s?.total_hours || 0}ש'</td>
+                          <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(s?.total_hours || 0)}</td>
                           <td>
                             <div className="flex gap-1">
                               <button className="btn btn-ghost p-2" onClick={() => openEdit(eq)}>

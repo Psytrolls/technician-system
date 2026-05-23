@@ -8,7 +8,20 @@ import { Users, ClipboardList, Clock, TrendingUp } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
-function formatHours(h: number) { return h ? `${h}ש'` : '0ש\''; }
+function formatHours(h: number) {
+  if (!h) return '0:00';
+  const totalMins = Math.round(h * 60);
+  const hrs = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  return `${hrs}:${String(mins).padStart(2, '0')}`;
+}
+
+function formatMinutes(mins: number) {
+  if (!mins) return '0:00';
+  const hrs = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${hrs}:${String(m).padStart(2, '0')}`;
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -64,8 +77,8 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-2">
               <Clock size={20} style={{ color: 'var(--primary)' }} />
             </div>
-            <div className="stat-value" style={{ color: 'var(--primary)' }}>
-              {totals?.total_hours || 0}
+            <div className="stat-value" style={{ color: 'var(--primary)', fontFamily: 'monospace', letterSpacing: '1px' }} dir="ltr">
+              {formatHours(totals?.total_hours)}
             </div>
             <div className="stat-label">סה"כ שעות עבודה</div>
           </div>
@@ -74,8 +87,8 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between mb-2">
               <TrendingUp size={20} style={{ color: 'var(--warning)' }} />
             </div>
-            <div className="stat-value" style={{ color: 'var(--warning)' }}>
-              {by_activity?.find((a: any) => a.activity_type === 'נסיעה')?.hours || 0}
+            <div className="stat-value" style={{ color: 'var(--warning)', fontFamily: 'monospace', letterSpacing: '1px' }} dir="ltr">
+              {formatHours(by_activity?.find((a: any) => a.activity_type === 'נסיעה')?.hours)}
             </div>
             <div className="stat-label">שעות נסיעה</div>
           </div>
@@ -119,7 +132,7 @@ export default function AdminDashboard() {
                     itemStyle={{ color: '#f8fafc' }}
                     cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                     labelFormatter={d => new Date(d).toLocaleDateString('he-IL')}
-                    formatter={(val: any) => [`${val} ש'`, 'שעות']}
+                    formatter={(val: any) => [formatHours(val), 'שעות']}
                   />
                   <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -166,7 +179,7 @@ export default function AdminDashboard() {
                     <Tooltip
                       contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
                       itemStyle={{ color: '#f8fafc' }}
-                      formatter={(val: any, name: any) => [`${val} ש'`, name]}
+                      formatter={(val: any, name: any) => [formatHours(val), name]}
                     />
                   </PieChart>
               </ResponsiveContainer>
@@ -191,7 +204,7 @@ export default function AdminDashboard() {
                     contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 }}
                     itemStyle={{ color: '#f8fafc' }}
                     cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                    formatter={(val: any) => [`${val} ש'`, 'שעות עבודה']}
+                    formatter={(val: any) => [formatHours(val), 'שעות עבודה']}
                   />
                   <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
                     {summary.by_operator.map((_: any, i: number) => (
@@ -259,8 +272,8 @@ export default function AdminDashboard() {
                       <tr key={t.id}>
                         <td className="font-medium">{t.name}</td>
                         <td>{t.completed_tasks ?? 0}</td>
-                        <td>{t.total_hours}ש'</td>
-                        <td>{t.avg_minutes}ד'</td>
+                        <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(t.total_hours)}</td>
+                        <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatMinutes(t.avg_minutes)}</td>
                         <td>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--border)' }}>
