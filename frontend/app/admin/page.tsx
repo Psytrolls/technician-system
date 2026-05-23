@@ -115,7 +115,8 @@ export default function AdminDashboard() {
                   />
                   <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <Tooltip
-                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
+                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 }}
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                     labelFormatter={d => new Date(d).toLocaleDateString('he-IL')}
                     formatter={(val: any) => [`${val}ש'`, 'שעות']}
                   />
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: any) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
                     labelLine={false}
                   >
                     {by_activity.map((_: any, i: number) => (
