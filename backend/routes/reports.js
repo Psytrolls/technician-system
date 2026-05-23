@@ -23,6 +23,12 @@ function fetchImageBuffer(url) {
   });
 }
 
+// Helper to reverse Hebrew text character by character for correct LTR rendering in canvas
+function reverseHebrew(str) {
+  if (!str) return '';
+  return str.split('').reverse().join('');
+}
+
 // GET /api/reports/summary — overall stats
 router.get('/summary', authMiddleware, (req, res) => {
   const { date_from, date_to, user_id } = req.query;
@@ -188,7 +194,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   // Table Headers
   const hebrewHeaders = [
     'שם טכנאי', 'משימה', 'סוג פעילות', 'תאריך', 'שעת התחלה', 'שעת סיום',
-    'משך (דקות)', 'משך (שעות)', 'גרף ויזואלי', 'מיקום', 'הערות', 'תיקון ידני', 'סיבת תיקון'
+    'משך (דקות)', 'משך (שעות)', 'גרף ויзואלי', 'מיקום', 'הערות', 'תיקון ידני', 'סיבת תיקון'
   ];
   
   const headerRow = ws.addRow(hebrewHeaders);
@@ -262,12 +268,21 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     GROUP BY activity_type ORDER BY 3 DESC
   `).all(...params);
 
+  const totalActivityHours = summaryData.reduce((sum, r) => sum + (r['סה"כ שעות'] || 0), 0);
+
   let pieChartBuffer = null;
   if (summaryData.length > 0) {
+    // Generate reversed labels with percentages for flawless LTR rendering in QuickChart legend
+    const chartLabels = summaryData.map(r => {
+      const hours = r['סה"כ שעות'] || 0;
+      const pct = totalActivityHours > 0 ? Math.round((hours / totalActivityHours) * 100) : 0;
+      return reverseHebrew(`${r['סוג פעילות']} (${pct}%)`);
+    });
+
     const pieChartConfig = {
       type: 'pie',
       data: {
-        labels: summaryData.map(r => r['סוג פעילות']),
+        labels: chartLabels,
         datasets: [{
           data: summaryData.map(r => r['סה"כ שעות']),
           backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
@@ -276,7 +291,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       options: {
         title: {
           display: true,
-          text: 'חלוקת שעות לפי סוג פעילות',
+          text: reverseHebrew('חלוקת שעות לפי סוג פעילות'),
           fontSize: 16,
           fontColor: '#1e293b',
           fontStyle: 'bold'
@@ -286,6 +301,12 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
           labels: {
             fontSize: 12,
             fontColor: '#334155'
+          }
+        },
+        plugins: {
+          // Hide dynamic text labels/numbers inside chart slices for absolute visual cleanliness
+          datalabels: {
+            display: false
           }
         }
       }
@@ -386,9 +407,9 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     const techChartConfig = {
       type: 'bar',
       data: {
-        labels: techData.map(r => r['שם טכנאי']),
+        labels: techData.map(r => reverseHebrew(r['שם טכנאי'])),
         datasets: [{
-          label: 'סה"כ שעות עבודה',
+          label: reverseHebrew('סה"כ שעות עבודה'),
           data: techData.map(r => r['סה"כ שעות']),
           backgroundColor: '#3b82f6',
           borderRadius: 4
@@ -397,7 +418,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       options: {
         title: {
           display: true,
-          text: 'השוואת שעות עבודה בין טכנאים',
+          text: reverseHebrew('השוואת שעות עבודה בין טכנאים'),
           fontSize: 16,
           fontColor: '#1e293b',
           fontStyle: 'bold'
@@ -411,6 +432,12 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
               beginAtZero: true
             }
           }]
+        },
+        plugins: {
+          // Clean graph, no datalabels overlay
+          datalabels: {
+            display: false
+          }
         }
       }
     };
