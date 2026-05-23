@@ -140,3 +140,14 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   .timer-display { font-size: 2rem; }
   .stat-value { font-size: 1.5rem; }
 }
+
+/* Fix Recharts RTL Hebrew rendering bugs (text clipping, labels mirroring, positioning offsets) globally */
+.recharts-wrapper {
+  direction: ltr !important;
+}
+.recharts-wrapper * {
+  direction: ltr !important;
+}
+.recharts-text {
+  direction: ltr !important;
+}
