@@ -186,7 +186,7 @@ export default function EquipmentPage() {
                           </td>
                           <td className="text-sm" style={{ color: 'var(--muted)' }}>{eq.description || '—'}</td>
                           <td>{s?.service_count || 0}</td>
-                          <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(s?.total_hours || 0)}</td>
+                          <td style={{ fontFamily: 'monospace', textAlign: 'right' }} dir="ltr">{formatHours(s?.total_hours || 0)}</td>
                           <td>
                             <div className="flex gap-1">
                               <button className="btn btn-ghost p-2" onClick={() => openEdit(eq)}>

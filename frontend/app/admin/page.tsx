@@ -272,8 +272,8 @@ export default function AdminDashboard() {
                       <tr key={t.id}>
                         <td className="font-medium">{t.name}</td>
                         <td>{t.completed_tasks ?? 0}</td>
-                        <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(t.total_hours)}</td>
-                        <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatMinutes(t.avg_minutes)}</td>
+                        <td style={{ fontFamily: 'monospace', textAlign: 'right' }} dir="ltr">{formatHours(t.total_hours)}</td>
+                        <td style={{ fontFamily: 'monospace', textAlign: 'right' }} dir="ltr">{formatMinutes(t.avg_minutes)}</td>
                         <td>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--border)' }}>

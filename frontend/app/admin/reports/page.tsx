@@ -437,8 +437,8 @@ export default function ReportsPage() {
                               </div>
                             </td>
                             <td>{t.completed_tasks ?? 0}</td>
-                            <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatHours(t.total_hours)}</td>
-                            <td style={{ fontFamily: 'monospace' }} dir="ltr">{formatMinutes(t.avg_minutes)}</td>
+                            <td style={{ fontFamily: 'monospace', textAlign: 'right' }} dir="ltr">{formatHours(t.total_hours)}</td>
+                            <td style={{ fontFamily: 'monospace', textAlign: 'right' }} dir="ltr">{formatMinutes(t.avg_minutes)}</td>
                             <td style={{ width: 160 }}>
                               <div className="flex items-center gap-2">
                                 <div
