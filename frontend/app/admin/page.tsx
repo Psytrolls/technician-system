@@ -136,27 +136,39 @@ export default function AdminDashboard() {
             <h2 className="text-base font-bold mb-4">חלוקה לפי סוג פעילות</h2>
             {by_activity?.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={by_activity}
-                    dataKey="hours"
-                    nameKey="activity_type"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ name, percent }: any) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
-                    labelLine={false}
-                  >
-                    {by_activity.map((_: any, i: number) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
-                    itemStyle={{ color: '#f8fafc' }}
-                    formatter={(val: any, name: any) => [`${val} ש'`, name]}
-                  />
-                </PieChart>
+                  <PieChart>
+                    <Pie
+                      data={by_activity}
+                      dataKey="hours"
+                      nameKey="activity_type"
+                      cx="40%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={3}
+                      label={({ percent }: any) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                      labelLine={false}
+                    >
+                      {by_activity.map((_: any, i: number) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                      iconType="circle"
+                      iconSize={9}
+                      formatter={(val: string) => (
+                        <span style={{ color: '#e2e8f0', fontSize: 12 }}>{val}</span>
+                      )}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
+                      itemStyle={{ color: '#f8fafc' }}
+                      formatter={(val: any, name: any) => [`${val} ש'`, name]}
+                    />
+                  </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-40" style={{ color: 'var(--muted)' }}>

@@ -25,6 +25,21 @@ function EmptyChart() {
   );
 }
 
+const renderYAxisTick = ({ x, y, payload }: any) => {
+  return (
+    <text
+      x={x - 8}
+      y={y + 4}
+      textAnchor="end"
+      fill="#e2e8f0"
+      fontSize={11}
+    >
+      {payload.value}
+    </text>
+  );
+};
+
+
 export default function ReportsPage() {
   const router = useRouter();
   const user = getUser();
@@ -249,7 +264,7 @@ export default function ReportsPage() {
                       <YAxis
                         type="category"
                         dataKey="activity_type"
-                        tick={{ fontSize: 11, fill: '#e2e8f0', textAnchor: 'end' }}
+                        tick={renderYAxisTick}
                         width={90}
                       />
                       <Tooltip
