@@ -118,7 +118,7 @@ export default function AdminDashboard() {
                     contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 }}
                     cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                     labelFormatter={d => new Date(d).toLocaleDateString('he-IL')}
-                    formatter={(val: any) => [`${val}ש'`, 'שעות']}
+                    formatter={(val: any) => [`${val} ש'`, 'שעות']}
                   />
                   <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -152,7 +152,7 @@ export default function AdminDashboard() {
                   </Pie>
                   <Tooltip
                     contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
-                    formatter={(val: any) => [`${val}ש'`, 'שעות']}
+                    formatter={(val: any) => [`${val} ש'`, 'שעות']}
                   />
                 </PieChart>
               </ResponsiveContainer>

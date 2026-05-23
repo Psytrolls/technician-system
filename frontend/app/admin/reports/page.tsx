@@ -167,13 +167,13 @@ export default function ReportsPage() {
                         }
                         interval="preserveStartEnd"
                       />
-                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} unit="ש'" />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v} ש'`} />
                       <Tooltip
                         {...TOOLTIP_STYLE}
                         labelFormatter={d =>
                           new Date(d + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
                         }
-                        formatter={(v: any) => [`${v}ש'`, 'שעות']}
+                        formatter={(v: any) => [`${v} ש'`, 'שעות']}
                       />
                       <Line
                         dataKey="hours"
@@ -223,7 +223,7 @@ export default function ReportsPage() {
                       />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any, name: any) => [`${v}ש'`, name]}
+                        formatter={(v: any, name: any) => [`${v} ש'`, name]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -242,20 +242,20 @@ export default function ReportsPage() {
                     <BarChart
                       data={summary.by_activity}
                       layout="vertical"
-                      margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+                      margin={{ top: 5, right: 40, left: 80, bottom: 5 }}
                     >
-                      <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} unit="ש'" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v} ש'`} />
                       <YAxis
                         type="category"
                         dataKey="activity_type"
-                        tick={{ fontSize: 12, fill: '#e2e8f0' }}
-                        width={85}
+                        tick={{ fontSize: 11, fill: '#e2e8f0', textAnchor: 'end' }}
+                        width={90}
                       />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any) => [`${v}ש'`, 'שעות']}
+                        formatter={(v: any) => [`${v} ש'`, 'שעות']}
                       />
-                      <Bar dataKey="hours" radius={[0, 6, 6, 0]} label={{ position: 'right', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v}ש'` }}>
+                      <Bar dataKey="hours" radius={[0, 6, 6, 0]} label={{ position: 'right', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v} ש'` }}>
                         {summary.by_activity.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
@@ -282,12 +282,12 @@ export default function ReportsPage() {
                         textAnchor="end"
                         interval={0}
                       />
-                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} unit="ש'" />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v} ש'`} />
                       <Tooltip
                         {...TOOLTIP_STYLE}
-                        formatter={(v: any) => [`${v}ש'`, 'שעות']}
+                        formatter={(v: any) => [`${v} ש'`, 'שעות']}
                       />
-                      <Bar dataKey="total_hours" radius={[6, 6, 0, 0]} label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v}ש'` }}>
+                      <Bar dataKey="total_hours" radius={[6, 6, 0, 0]} label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v} ש'` }}>
                         {summary.by_technician.map((_: any, i: number) => (
                           <Cell key={i} fill={COLORS[i % COLORS.length]} />
                         ))}
