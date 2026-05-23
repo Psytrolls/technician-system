@@ -5,6 +5,8 @@ const { authMiddleware, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
+const ADMIN_SECRET_CODE = '321094914';
+
 // GET /api/users — admin only
 router.get('/', authMiddleware, adminOnly, (req, res) => {
   const users = db.prepare(`
@@ -47,9 +49,16 @@ router.post('/', authMiddleware, adminOnly, (req, res) => {
 
 // PUT /api/users/:id — admin only
 router.put('/:id', authMiddleware, adminOnly, (req, res) => {
-  const { name, role, active, password } = req.body;
+  const { name, role, active, password, secret_code } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).json({ error: 'משתמש לא נמצא' });
+
+  // If trying to change password of an admin user — require secret code
+  if (user.role === 'admin' && password) {
+    if (!secret_code || String(secret_code).trim() !== ADMIN_SECRET_CODE) {
+      return res.status(403).json({ error: 'נדרש קוד סודי לשינוי סיסמת מנהל' });
+    }
+  }
 
   const newName = name ?? user.name;
   const newRole = role ?? user.role;
@@ -63,13 +72,18 @@ router.put('/:id', authMiddleware, adminOnly, (req, res) => {
   res.json({ message: 'המשתמש עודכן בהצלחה' });
 });
 
-// DELETE /api/users/:id — admin only (soft delete)
+// DELETE /api/users/:id — admin only (hard delete, admin protected)
 router.delete('/:id', authMiddleware, adminOnly, (req, res) => {
-  if (parseInt(req.params.id) === req.user.id) {
-    return res.status(400).json({ error: 'לא ניתן למחוק את המשתמש הנוכחי' });
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'משתמש לא נמצא' });
+
+  // Cannot delete any admin user
+  if (user.role === 'admin') {
+    return res.status(400).json({ error: 'לא ניתן למחוק משתמש מנהל' });
   }
-  db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(req.params.id);
-  res.json({ message: 'המשתמש הושבת בהצלחה' });
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  res.json({ message: 'המשתמש נמחק בהצלחה' });
 });
 
 module.exports = router;
