@@ -23,11 +23,6 @@ function fetchImageBuffer(url) {
   });
 }
 
-// Helper to reverse Hebrew text character by character for correct LTR rendering in canvas
-function reverseHebrew(str) {
-  if (!str) return '';
-  return str.split('').reverse().join('');
-}
 
 // GET /api/reports/summary — overall stats
 router.get('/summary', authMiddleware, (req, res) => {
@@ -272,11 +267,10 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 
   let pieChartBuffer = null;
   if (summaryData.length > 0) {
-    // Generate reversed labels with percentages for flawless LTR rendering in QuickChart legend
     const chartLabels = summaryData.map(r => {
       const hours = r['סה"כ שעות'] || 0;
       const pct = totalActivityHours > 0 ? Math.round((hours / totalActivityHours) * 100) : 0;
-      return reverseHebrew(`${r['סוג פעילות']} (${pct}%)`);
+      return `${r['סוג פעילות']} (${pct}%)`;
     });
 
     const pieChartConfig = {
@@ -291,7 +285,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       options: {
         title: {
           display: true,
-          text: reverseHebrew('חלוקת שעות לפי סוג פעילות'),
+          text: 'חלוקת שעות לפי סוג פעילות',
           fontSize: 16,
           fontColor: '#1e293b',
           fontStyle: 'bold'
@@ -407,9 +401,9 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     const techChartConfig = {
       type: 'bar',
       data: {
-        labels: techData.map(r => reverseHebrew(r['שם טכנאי'])),
+        labels: techData.map(r => r['שם טכנאי']),
         datasets: [{
-          label: reverseHebrew('סה"כ שעות עבודה'),
+          label: 'סה"כ שעות עבודה',
           data: techData.map(r => r['סה"כ שעות']),
           backgroundColor: '#3b82f6',
           borderRadius: 4
@@ -418,7 +412,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       options: {
         title: {
           display: true,
-          text: reverseHebrew('השוואת שעות עבודה בין טכנאים'),
+          text: 'השוואת שעות עבודה בין טכנאים',
           fontSize: 16,
           fontColor: '#1e293b',
           fontStyle: 'bold'
