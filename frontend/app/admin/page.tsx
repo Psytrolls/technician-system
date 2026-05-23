@@ -116,6 +116,7 @@ export default function AdminDashboard() {
                   <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <Tooltip
                     contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 }}
+                    itemStyle={{ color: '#f8fafc' }}
                     cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                     labelFormatter={d => new Date(d).toLocaleDateString('he-IL')}
                     formatter={(val: any) => [`${val} ש'`, 'שעות']}
@@ -152,7 +153,8 @@ export default function AdminDashboard() {
                   </Pie>
                   <Tooltip
                     contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
-                    formatter={(val: any) => [`${val} ש'`, 'שעות']}
+                    itemStyle={{ color: '#f8fafc' }}
+                    formatter={(val: any, name: any) => [`${val} ש'`, name]}
                   />
                 </PieChart>
               </ResponsiveContainer>

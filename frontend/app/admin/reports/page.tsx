@@ -13,6 +13,7 @@ const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 
 const TOOLTIP_STYLE = {
   contentStyle: { background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 },
+  itemStyle: { color: '#f8fafc' },
   cursor: { fill: 'rgba(255,255,255,0.04)' },
 };
 
