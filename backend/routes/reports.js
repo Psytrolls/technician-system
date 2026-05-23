@@ -528,3 +528,4 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 });
 
 module.exports = router;
+// Render webhook trigger to force auto-deploy of the reversed Hebrew bar chart fixes
