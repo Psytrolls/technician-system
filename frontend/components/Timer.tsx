@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 import { Play, Square, MapPin, Wrench, ChevronDown, CheckCircle, Circle } from 'lucide-react';
 import EquipmentDrawer from './EquipmentDrawer';
 
-const ACTIVITY_TYPES = ['נסיעה', 'טיפול בתקלה', 'התקנה', 'תחזוקה', 'בדיקה', 'הפסקה', 'אחר'];
+const ACTIVITY_TYPES = ['נסיעה', 'טיפול בתקלה', 'הפסקה', 'אחר'];
 
 const PRIORITY_COLOR: Record<string, string> = {
   urgent: '#ef4444', high: '#f59e0b', medium: '#3b82f6', low: '#64748b',
