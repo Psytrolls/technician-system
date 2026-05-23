@@ -69,11 +69,12 @@ router.get('/summary', authMiddleware, (req, res) => {
            ROUND(AVG(tl.duration_minutes), 0) as avg_minutes,
            (
              SELECT COUNT(*)
-             FROM tasks t
-             WHERE t.assigned_to = u.id
-               AND t.status = 'completed'
-               ${date_from ? `AND DATE(t.updated_at) >= '${date_from}'` : ''}
-               ${date_to ? `AND DATE(t.updated_at) <= '${date_to}'` : ''}
+             FROM time_logs t
+             WHERE t.user_id = u.id
+               AND t.end_time IS NOT NULL
+               AND t.activity_type = 'טיפול בתקלה'
+               ${date_from ? `AND DATE(t.start_time) >= '${date_from}'` : ''}
+               ${date_to ? `AND DATE(t.start_time) <= '${date_to}'` : ''}
            ) as completed_tasks
     FROM time_logs tl
     JOIN users u ON tl.user_id = u.id
@@ -427,11 +428,12 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
            ROUND(SUM(tl.duration_minutes)/60.0, 2) as 'סה"כ שעות',
            (
              SELECT COUNT(*)
-             FROM tasks t
-             WHERE t.assigned_to = u.id
-               AND t.status = 'completed'
-               ${date_from ? `AND DATE(t.updated_at) >= '${date_from}'` : ''}
-               ${date_to ? `AND DATE(t.updated_at) <= '${date_to}'` : ''}
+             FROM time_logs t
+             WHERE t.user_id = u.id
+               AND t.end_time IS NOT NULL
+               AND t.activity_type = 'טיפול בתקלה'
+               ${date_from ? `AND DATE(t.start_time) >= '${date_from}'` : ''}
+               ${date_to ? `AND DATE(t.start_time) <= '${date_to}'` : ''}
            ) as 'משימות שהושלמו'
     FROM time_logs tl
     JOIN users u ON tl.user_id = u.id
