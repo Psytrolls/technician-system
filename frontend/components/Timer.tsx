@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { Play, Square, MapPin, Wrench, ChevronDown, CheckCircle, Circle } from 'lucide-react';
 import EquipmentDrawer from './EquipmentDrawer';
@@ -38,6 +38,7 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
   const [notes, setNotes]                   = useState('');
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState('');
+  const operatorSelectRef                   = useRef<HTMLSelectElement>(null);
 
   // Load active timer + equipment list + operators
   useEffect(() => {
@@ -235,9 +236,19 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
             <div>
               <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
               <select
+                ref={operatorSelectRef}
                 className="input select-custom"
                 value={selectedOperator ?? ''}
                 onChange={e => setSelectedOperator(e.target.value ? parseInt(e.target.value) : null)}
+                style={{
+                  border: activityType === 'טיפול בתקלה' && !selectedOperator 
+                    ? '2px dashed var(--warning)' 
+                    : '1px solid var(--border)',
+                  animation: activityType === 'טיפול בתקלה' && !selectedOperator 
+                    ? 'pulse-border 1.5s infinite alternate' 
+                    : 'none',
+                  transition: 'all 0.3s ease'
+                }}
               >
                 <option value="">בחר לקוח / מפעיל...</option>
                 {operatorList.map(op => (
@@ -253,7 +264,15 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
                 {ACTIVITY_TYPES.map(type => (
                   <button
                     key={type}
-                    onClick={() => { setActivityType(type); setCustomActivity(''); }}
+                    onClick={() => {
+                      setActivityType(type);
+                      setCustomActivity('');
+                      if (type === 'טיפול בתקלה') {
+                        setTimeout(() => {
+                          operatorSelectRef.current?.focus();
+                        }, 100);
+                      }
+                    }}
                     className="btn btn-ghost text-xs py-1 px-3"
                     style={activityType === type
                       ? { background: 'var(--primary)', color: 'white', borderColor: 'var(--primary)' }
@@ -328,6 +347,13 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
           onClose={() => setShowDrawer(false)}
         />
       )}
+      {/* Dynamic Keyframes Style */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes pulse-border {
+          from { box-shadow: 0 0 4px rgba(245, 158, 11, 0.4); border-color: var(--warning); }
+          to { box-shadow: 0 0 12px rgba(245, 158, 11, 0.8); border-color: #f59e0b; }
+        }
+      `}} />
     </>
   );
 }

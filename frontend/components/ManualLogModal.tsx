@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import { X, Wrench, ChevronDown } from 'lucide-react';
 import EquipmentDrawer from './EquipmentDrawer';
@@ -33,6 +33,7 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
   const [showDrawer, setShowDrawer]         = useState(false);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+  const operatorSelectRef   = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     api.equipment.list().then(setEquipList).catch(() => {});
@@ -113,7 +114,17 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
               <select
                 className="input"
                 value={form.activity_type}
-                onChange={e => { set('activity_type', e.target.value); setCustomActivity(''); setSelectedEquip(null); }}
+                onChange={e => {
+                  const val = e.target.value;
+                  set('activity_type', val);
+                  setCustomActivity('');
+                  setSelectedEquip(null);
+                  if (val === 'טיפול בתקלה') {
+                    setTimeout(() => {
+                      operatorSelectRef.current?.focus();
+                    }, 100);
+                  }
+                }}
               >
                 {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -164,9 +175,19 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
             <div>
               <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
               <select
+                ref={operatorSelectRef}
                 className="input select-custom"
                 value={selectedOperator ?? ''}
                 onChange={e => setSelectedOperator(e.target.value ? parseInt(e.target.value) : null)}
+                style={{
+                  border: form.activity_type === 'טיפול בתקלה' && !selectedOperator 
+                    ? '2px dashed var(--warning)' 
+                    : '1px solid var(--border)',
+                  animation: form.activity_type === 'טיפול בתקלה' && !selectedOperator 
+                    ? 'pulse-border 1.5s infinite alternate' 
+                    : 'none',
+                  transition: 'all 0.3s ease'
+                }}
               >
                 <option value="">בחר לקוח / מפעיל...</option>
                 {operatorList.map(op => (
@@ -252,6 +273,13 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
           onClose={() => setShowDrawer(false)}
         />
       )}
+      {/* Dynamic Keyframes Style */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes pulse-border {
+          from { box-shadow: 0 0 4px rgba(245, 158, 11, 0.4); border-color: var(--warning); }
+          to { box-shadow: 0 0 12px rgba(245, 158, 11, 0.8); border-color: #f59e0b; }
+        }
+      `}} />
     </>
   );
 }
