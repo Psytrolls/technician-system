@@ -26,7 +26,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Logo */}
       <div className="flex items-center gap-2 mb-4 px-2">
-        <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+        <img src="/logo.png" alt="Logo" className="w-20 h-8 object-contain" />
         <div>
           <div className="font-bold text-sm">מערכת טכנאים</div>
           <div className="text-xs" style={{ color: 'var(--muted)' }}>
