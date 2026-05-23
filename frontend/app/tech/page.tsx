@@ -109,11 +109,21 @@ export default function TechDashboard() {
         {/* Today Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           <div className="stat-card">
-            <div className="stat-value" style={{ color: 'var(--primary)' }}>{formatTime(todayMinutes)}</div>
+            <div className="stat-value" style={{ color: 'var(--primary)' }}>
+              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                {Math.floor(todayMinutes / 60) > 0 && <><span>{Math.floor(todayMinutes / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
+                <span>{todayMinutes % 60}</span><span className="text-base font-normal">ד'</span>
+              </span>
+            </div>
             <div className="stat-label">סה"כ היום</div>
           </div>
           <div className="stat-card">
-            <div className="stat-value" style={{ color: 'var(--warning)' }}>{formatTime(travelMinutes)}</div>
+            <div className="stat-value" style={{ color: 'var(--warning)' }}>
+              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                {Math.floor(travelMinutes / 60) > 0 && <><span>{Math.floor(travelMinutes / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
+                <span>{travelMinutes % 60}</span><span className="text-base font-normal">ד'</span>
+              </span>
+            </div>
             <div className="stat-label">נסיעות היום</div>
           </div>
           <div className="stat-card">

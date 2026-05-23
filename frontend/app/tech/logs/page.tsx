@@ -160,15 +160,19 @@ export default function TechLogsPage() {
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="stat-card">
             <div className="stat-value" style={{ color: '#3b82f6' }}>
-              {Math.floor(totalMins / 60)}<span className="text-base font-normal">ש' </span>
-              {totalMins % 60}<span className="text-base font-normal">ד'</span>
+              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                {Math.floor(totalMins / 60) > 0 && <><span>{Math.floor(totalMins / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
+                <span>{totalMins % 60}</span><span className="text-base font-normal">ד'</span>
+              </span>
             </div>
             <div className="stat-label">סה"כ בתקופה</div>
           </div>
           <div className="stat-card">
             <div className="stat-value" style={{ color: '#f59e0b' }}>
-              {Math.floor(travelMins / 60)}<span className="text-base font-normal">ש' </span>
-              {travelMins % 60}<span className="text-base font-normal">ד'</span>
+              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+                {Math.floor(travelMins / 60) > 0 && <><span>{Math.floor(travelMins / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
+                <span>{travelMins % 60}</span><span className="text-base font-normal">ד'</span>
+              </span>
             </div>
             <div className="stat-label">נסיעות</div>
           </div>
