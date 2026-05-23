@@ -92,11 +92,34 @@ router.get('/summary', authMiddleware, (req, res) => {
     FROM tasks
   `).get();
 
+  const byOperator = db.prepare(`
+    SELECT o.name,
+           o.id,
+           COUNT(*) as entries,
+           ROUND(SUM(tl.duration_minutes) / 60.0, 2) as total_hours
+    FROM time_logs tl
+    JOIN operators o ON tl.operator_id = o.id
+    WHERE tl.end_time IS NOT NULL ${userFilter} ${dateWhere}
+    GROUP BY o.id
+    ORDER BY total_hours DESC
+  `).all(...params);
+
+  const completionsByDay = db.prepare(`
+    SELECT DATE(updated_at) as date,
+           COUNT(*) as count
+    FROM tasks
+    WHERE status = 'completed'
+    GROUP BY DATE(updated_at)
+    ORDER BY date ASC
+  `).all();
+
   res.json({
     totals: totalHours,
     by_activity: byActivity,
     by_technician: byTechnician,
     by_day: byDay,
+    by_operator: byOperator,
+    completions_by_day: completionsByDay,
     tasks: taskStats
   });
 });
@@ -117,6 +140,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     SELECT
       u.name                                                        as technician_name,
       t.title                                                       as task_title,
+      o.name                                                        as operator_name,
       tl.activity_type,
       DATE(tl.start_time)                                          as date,
       TIME(tl.start_time)                                          as start_time,
@@ -130,6 +154,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     FROM time_logs tl
     JOIN users u ON tl.user_id = u.id
     LEFT JOIN tasks t ON tl.task_id = t.id
+    LEFT JOIN operators o ON tl.operator_id = o.id
     WHERE ${where}
     ORDER BY tl.start_time DESC
   `).all(...params);
@@ -154,6 +179,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   ws.columns = [
     { key: 'technician_name', width: 18 },
     { key: 'task_title', width: 22 },
+    { key: 'operator_name', width: 20 },
     { key: 'activity_type', width: 16 },
     { key: 'date', width: 12 },
     { key: 'start_time', width: 12 },
@@ -168,7 +194,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   ];
 
   // Title Block
-  ws.mergeCells('A1:M1');
+  ws.mergeCells('A1:N1');
   const titleCell = ws.getCell('A1');
   titleCell.value = 'דוח פעילויות טכנאים מפורט';
   titleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -176,7 +202,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
   ws.getRow(1).height = 40;
 
-  ws.mergeCells('A2:M2');
+  ws.mergeCells('A2:N2');
   const subtitleCell = ws.getCell('A2');
   subtitleCell.value = `טווח תאריכים: ${date_from || 'הכל'} עד ${date_to || 'הכל'}  |  תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}`;
   subtitleCell.font = { name: 'Segoe UI', size: 11, italic: true, color: { argb: 'FF475569' } };
@@ -188,8 +214,8 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 
   // Table Headers
   const hebrewHeaders = [
-    'שם טכנאי', 'משימה', 'סוג פעילות', 'תאריך', 'שעת התחלה', 'שעת סיום',
-    'משך (דקות)', 'משך (שעות)', 'גרף ויзואלי', 'מיקום', 'הערות', 'תיקון ידני', 'סיבת תיקון'
+    'שם טכנאי', 'משימה', 'לקוח / מפעיל', 'סוג פעילות', 'תאריך', 'שעת התחלה', 'שעת סיום',
+    'משך (דקות)', 'משך (שעות)', 'גרף ויזואלי', 'מיקום', 'הערות', 'תיקון ידני', 'סיבת תיקון'
   ];
   
   const headerRow = ws.addRow(hebrewHeaders);
@@ -212,13 +238,14 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     const rowData = [
       log.technician_name ?? '',
       log.task_title ?? '',
+      log.operator_name ?? '',
       log.activity_type ?? '',
       log.date ?? '',
       log.start_time ?? '',
       log.end_time ?? '',
       log.duration_minutes ?? 0,
       log.duration_hours ?? 0,
-      { formula: `IF(H${rowNum}>0, REPT("█", MIN(50, ROUND(H${rowNum}*4, 0))), "")` },
+      { formula: `IF(I${rowNum}>0, REPT("█", MIN(50, ROUND(I${rowNum}*4, 0))), "")` },
       log.location ?? '',
       log.notes ?? '',
       log.is_manual ?? '',
@@ -238,9 +265,9 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
         fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
       };
 
-      if (colNumber === 7 || colNumber === 8) {
+      if (colNumber === 8 || colNumber === 9) {
         cell.alignment = { horizontal: 'right', vertical: 'middle' };
-      } else if (colNumber === 9) {
+      } else if (colNumber === 10) {
         cell.alignment = { horizontal: 'left', vertical: 'middle' };
         cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF3B82F6' } }; // Beautiful primary blue blocks!
       } else {
@@ -249,7 +276,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     });
   });
 
-  ws.autoFilter = `A4:M${logs.length + 4}`;
+  ws.autoFilter = `A4:N${logs.length + 4}`;
 
   // ==========================================
   // SHEET 2: סיכום לפי פעילות (Summary by Activity)
@@ -389,7 +416,15 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
   const techData = db.prepare(`
     SELECT u.name as 'שם טכנאי',
            COUNT(*) as 'מספר רשומות',
-           ROUND(SUM(tl.duration_minutes)/60.0, 2) as 'סה"כ שעות'
+           ROUND(SUM(tl.duration_minutes)/60.0, 2) as 'סה"כ שעות',
+           (
+             SELECT COUNT(*)
+             FROM tasks t
+             WHERE t.assigned_to = u.id
+               AND t.status = 'completed'
+               ${date_from ? `AND DATE(t.updated_at) >= '${date_from}'` : ''}
+               ${date_to ? `AND DATE(t.updated_at) <= '${date_to}'` : ''}
+           ) as 'משימות שהושלמו'
     FROM time_logs tl
     JOIN users u ON tl.user_id = u.id
     WHERE ${where}
@@ -402,23 +437,36 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       type: 'bar',
       data: {
         labels: techData.map(r => r['שם טכנאי']),
-        datasets: [{
-          label: 'סה"כ שעות עבודה',
-          data: techData.map(r => r['סה"כ שעות']),
-          backgroundColor: '#3b82f6',
-          borderRadius: 4
-        }]
+        datasets: [
+          {
+            label: 'סה"כ שעות עבודה',
+            data: techData.map(r => r['סה"כ שעות']),
+            backgroundColor: '#3b82f6',
+            borderRadius: 4
+          },
+          {
+            label: 'משימות שהושלמו',
+            data: techData.map(r => r['משימות שהושלמו']),
+            backgroundColor: '#10b981',
+            borderRadius: 4
+          }
+        ]
       },
       options: {
         title: {
           display: true,
-          text: 'השוואת שעות עבודה בין טכנאים',
+          text: 'השוואת שעות עבודה ומשימות שהושלמו בין טכנאים',
           fontSize: 16,
           fontColor: '#1e293b',
           fontStyle: 'bold'
         },
         legend: {
-          display: false
+          display: true,
+          position: 'top',
+          labels: {
+            fontColor: '#334155',
+            fontSize: 12
+          }
         },
         scales: {
           yAxes: [{
@@ -428,7 +476,6 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
           }]
         },
         plugins: {
-          // Clean graph, no datalabels overlay
           datalabels: {
             display: false
           }
@@ -447,10 +494,11 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     { key: 'technician', width: 20 },
     { key: 'entries', width: 16 },
     { key: 'hours', width: 16 },
+    { key: 'completed_tasks', width: 18 },
     { key: 'graph', width: 18 },
   ];
 
-  ws3.mergeCells('A1:D1');
+  ws3.mergeCells('A1:E1');
   const t3Cell = ws3.getCell('A1');
   t3Cell.value = 'סיכום שעות לפי טכנאים';
   t3Cell.font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -460,7 +508,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 
   ws3.addRow([]); // Blank row
 
-  const tHeaders = ['שם טכנאי', 'מספר רשומות', 'סה"כ שעות', 'גרף ויזואלי'];
+  const tHeaders = ['שם טכנאי', 'מספר רשומות', 'סה"כ שעות', 'משימות שהושלמו', 'גרף ויזואלי'];
   const tHeaderRow = ws3.addRow(tHeaders);
   tHeaderRow.height = 25;
   tHeaderRow.eachCell((cell) => {
@@ -476,6 +524,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       r['שם טכנאי'] ?? '',
       r['מספר רשומות'] ?? 0,
       r['סה"כ שעות'] ?? 0,
+      r['משימות שהושלמו'] ?? 0,
       { formula: `IF(C${rowNum}>0, REPT("█", MIN(50, ROUND(C${rowNum}*2, 0))), "")` }
     ]);
     row.height = 22;
@@ -489,9 +538,9 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
         fgColor: { argb: isEven ? 'FFFFFFFF' : 'FFF8FAFC' }
       };
 
-      if (colNumber === 2 || colNumber === 3) {
+      if (colNumber === 2 || colNumber === 3 || colNumber === 4) {
         cell.alignment = { horizontal: 'right', vertical: 'middle' };
-      } else if (colNumber === 4) {
+      } else if (colNumber === 5) {
         cell.alignment = { horizontal: 'left', vertical: 'middle' };
         cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF8B5CF6' } }; // Beautiful purple blocks!
       } else {
@@ -500,7 +549,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     });
   });
 
-  ws3.autoFilter = `A3:D${techData.length + 3}`;
+  ws3.autoFilter = `A3:E${techData.length + 3}`;
 
   if (barChartBuffer) {
     const barImgId = workbook.addImage({

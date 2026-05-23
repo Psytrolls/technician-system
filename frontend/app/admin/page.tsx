@@ -178,6 +178,64 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Operator workload and Completed tasks charts */}
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="card">
+            <h2 className="text-base font-bold mb-4">עומס עבודה לפי לקוח / מפעיל</h2>
+            {summary.by_operator?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={summary.by_operator} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} interval={0} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <Tooltip
+                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 }}
+                    itemStyle={{ color: '#f8fafc' }}
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                    formatter={(val: any) => [`${val} ש'`, 'שעות עבודה']}
+                  />
+                  <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+                    {summary.by_operator.map((_: any, i: number) => (
+                      <Cell key={i} fill={COLORS[(i + 1) % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-40" style={{ color: 'var(--muted)' }}>
+                אין נתונים
+              </div>
+            )}
+          </div>
+
+          <div className="card">
+            <h2 className="text-base font-bold mb-4">משימות שהושלמו לפי יום</h2>
+            {summary.completions_by_day?.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={summary.completions_by_day} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tickFormatter={d => new Date(d).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <Tooltip
+                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, fontSize: 13 }}
+                    itemStyle={{ color: '#f8fafc' }}
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                    labelFormatter={d => new Date(d).toLocaleDateString('he-IL')}
+                    formatter={(val: any) => [`${val}`, 'משימות הושלמו']}
+                  />
+                  <Bar dataKey="completed_count" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-40" style={{ color: 'var(--muted)' }}>
+                אין נתונים
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Technicians table */}
         <div className="card">
           <h2 className="text-base font-bold mb-4">ביצועי טכנאים — 30 ימים אחרונים</h2>

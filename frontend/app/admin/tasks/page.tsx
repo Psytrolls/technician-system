@@ -20,7 +20,7 @@ const PRIORITY_BADGES: Record<string, string> = {
 const FAULT_TYPES = ['תקלת חשמל', 'תקלת רשת', 'תקלת מכניקה', 'תחזוקה שגרתית', 'התקנה', 'בדיקה', 'אחר'];
 
 const EMPTY_FORM = {
-  title: '', description: '', location: '', fault_type: '', assigned_to: '', priority: 'medium',
+  title: '', description: '', location: '', fault_type: '', assigned_to: '', priority: 'medium', operator_id: '',
 };
 
 export default function TasksPage() {
@@ -28,6 +28,7 @@ export default function TasksPage() {
   const user = getUser();
   const [tasks, setTasks] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [operators, setOperators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
@@ -45,9 +46,10 @@ export default function TasksPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [t, u] = await Promise.all([api.tasks.list(), api.users.list()]);
+      const [t, u, ops] = await Promise.all([api.tasks.list(), api.users.list(), api.operators.list()]);
       setTasks(t);
       setUsers(u.filter((u: any) => u.role === 'technician' && u.active));
+      setOperators(ops);
     } catch {}
     finally { setLoading(false); }
   }
@@ -67,6 +69,7 @@ export default function TasksPage() {
       fault_type: task.fault_type || '',
       assigned_to: task.assigned_to?.toString() || '',
       priority: task.priority,
+      operator_id: task.operator_id?.toString() || '',
     });
     setEditingTask(task);
     setError('');
@@ -81,6 +84,7 @@ export default function TasksPage() {
       const data = {
         ...form,
         assigned_to: form.assigned_to ? parseInt(form.assigned_to) : undefined,
+        operator_id: form.operator_id ? parseInt(form.operator_id) : null,
       };
       if (modal === 'create') {
         await api.tasks.create(data);
@@ -142,6 +146,7 @@ export default function TasksPage() {
                 <thead>
                   <tr>
                     <th>כותרת</th>
+                    <th>לקוח / מפעיל</th>
                     <th>מוקצה ל</th>
                     <th>סוג תקלה</th>
                     <th>עדיפות</th>
@@ -157,6 +162,13 @@ export default function TasksPage() {
                         <div className="font-medium">{task.title}</div>
                         {task.location && (
                           <div className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>📍 {task.location}</div>
+                        )}
+                      </td>
+                      <td>
+                        {task.operator_name ? (
+                          <span className="badge badge-blue">{task.operator_name}</span>
+                        ) : (
+                          <span style={{ color: 'var(--muted)' }}>—</span>
                         )}
                       </td>
                       <td>
@@ -213,14 +225,21 @@ export default function TasksPage() {
                   <input className="input" value={form.location} onChange={e => setForm(f => ({...f, location: e.target.value}))} placeholder="כתובת / מיקום" />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
+                  <select className="input" value={form.operator_id} onChange={e => setForm(f => ({...f, operator_id: e.target.value}))}>
+                    <option value="">ללא לקוח / מפעיל</option>
+                    {operators.map((op: any) => <option key={op.id} value={op.id}>{op.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
                   <label className="block text-sm font-medium mb-1">סוג תקלה</label>
                   <select className="input" value={form.fault_type} onChange={e => setForm(f => ({...f, fault_type: e.target.value}))}>
                     <option value="">בחר...</option>
                     {FAULT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">הקצה לטכנאי</label>
                   <select className="input" value={form.assigned_to} onChange={e => setForm(f => ({...f, assigned_to: e.target.value}))}>

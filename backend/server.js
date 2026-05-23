@@ -7,6 +7,7 @@ const taskRoutes      = require('./routes/tasks');
 const timelogRoutes   = require('./routes/timelogs');
 const reportRoutes    = require('./routes/reports');
 const equipmentRoutes = require('./routes/equipment');
+const operatorRoutes  = require('./routes/operators');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -26,6 +27,7 @@ app.use('/api/tasks',     taskRoutes);
 app.use('/api/timelogs',  timelogRoutes);
 app.use('/api/reports',   reportRoutes);
 app.use('/api/equipment', equipmentRoutes);
+app.use('/api/operators', operatorRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

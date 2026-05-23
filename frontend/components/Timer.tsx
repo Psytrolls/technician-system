@@ -31,13 +31,15 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
   const [selectedTask, setSelectedTask]     = useState<number | null>(null);
   const [selectedEquip, setSelectedEquip]   = useState<number | null>(null);
   const [equipList, setEquipList]           = useState<any[]>([]);
+  const [operatorList, setOperatorList]     = useState<any[]>([]);
+  const [selectedOperator, setSelectedOperator] = useState<number | null>(null);
   const [showDrawer, setShowDrawer]         = useState(false);
   const [location, setLocation]             = useState('');
   const [notes, setNotes]                   = useState('');
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState('');
 
-  // Load active timer + equipment list
+  // Load active timer + equipment list + operators
   useEffect(() => {
     api.timelogs.active().then(log => {
       if (log) {
@@ -46,7 +48,18 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
       }
     }).catch(() => {});
     api.equipment.list().then(setEquipList).catch(() => {});
+    api.operators.list().then(setOperatorList).catch(() => {});
   }, []);
+
+  // Pre-fill operator when task is selected
+  useEffect(() => {
+    if (selectedTask) {
+      const task = tasks.find(t => t.id === selectedTask);
+      if (task?.operator_id) {
+        setSelectedOperator(task.operator_id);
+      }
+    }
+  }, [selectedTask, tasks]);
 
   // Tick
   useEffect(() => {
@@ -73,6 +86,7 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
         activity_type: resolvedActivity,
         task_id: selectedTask ?? undefined,
         equipment_id: selectedEquip ?? undefined,
+        operator_id: selectedOperator ?? undefined,
         location: location || undefined,
       });
       const newLog = await api.timelogs.active();
@@ -96,6 +110,7 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
       setElapsed(0);
       setNotes('');
       setSelectedEquip(null);
+      setSelectedOperator(null);
       onLogCreated();
     } catch (err: any) {
       setError(err.message);
@@ -119,6 +134,9 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
           {activeLog && (
             <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
               <span className="badge badge-green">{activeLog.activity_type}</span>
+              {activeLog.operator_name && (
+                <span className="badge badge-blue">{activeLog.operator_name}</span>
+              )}
               {activeLog.task_title && (
                 <span className="text-sm" style={{ color: 'var(--muted)' }}>{activeLog.task_title}</span>
               )}
@@ -211,6 +229,21 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Operator select */}
+            <div>
+              <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
+              <select
+                className="input select-custom"
+                value={selectedOperator ?? ''}
+                onChange={e => setSelectedOperator(e.target.value ? parseInt(e.target.value) : null)}
+              >
+                <option value="">בחר לקוח / מפעיל...</option>
+                {operatorList.map(op => (
+                  <option key={op.id} value={op.id}>{op.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Activity type */}

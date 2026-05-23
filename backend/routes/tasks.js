@@ -10,10 +10,12 @@ router.get('/', authMiddleware, (req, res) => {
   let query = `
     SELECT t.*,
            u.name as assigned_name,
-           c.name as created_by_name
+           c.name as created_by_name,
+           o.name as operator_name
     FROM tasks t
     LEFT JOIN users u ON t.assigned_to = u.id
     LEFT JOIN users c ON t.created_by = c.id
+    LEFT JOIN operators o ON t.operator_id = o.id
     WHERE 1=1
   `;
   const params = [];
@@ -46,10 +48,12 @@ router.get('/:id', authMiddleware, (req, res) => {
   const task = db.prepare(`
     SELECT t.*,
            u.name as assigned_name,
-           c.name as created_by_name
+           c.name as created_by_name,
+           o.name as operator_name
     FROM tasks t
     LEFT JOIN users u ON t.assigned_to = u.id
     LEFT JOIN users c ON t.created_by = c.id
+    LEFT JOIN operators o ON t.operator_id = o.id
     WHERE t.id = ?
   `).get(req.params.id);
 
@@ -63,12 +67,12 @@ router.get('/:id', authMiddleware, (req, res) => {
 
 // POST /api/tasks — admin only
 router.post('/', authMiddleware, adminOnly, (req, res) => {
-  const { title, description, location, fault_type, assigned_to, priority } = req.body;
+  const { title, description, location, fault_type, assigned_to, priority, operator_id } = req.body;
   if (!title) return res.status(400).json({ error: 'כותרת נדרשת' });
 
   const result = db.prepare(`
-    INSERT INTO tasks (title, description, location, fault_type, assigned_to, priority, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO tasks (title, description, location, fault_type, assigned_to, priority, operator_id, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     title,
     description || null,
@@ -76,6 +80,7 @@ router.post('/', authMiddleware, adminOnly, (req, res) => {
     fault_type || null,
     assigned_to !== undefined && assigned_to !== '' ? parseInt(assigned_to) : null,
     priority || 'medium',
+    operator_id !== undefined && operator_id !== '' ? parseInt(operator_id) : null,
     req.user.id
   );
 
@@ -98,7 +103,7 @@ router.put('/:id', authMiddleware, (req, res) => {
   }
 
   // Admin can update everything
-  const { title, description, location, fault_type, assigned_to, status, priority } = req.body;
+  const { title, description, location, fault_type, assigned_to, status, priority, operator_id } = req.body;
   db.prepare(`
     UPDATE tasks SET
       title = COALESCE(?, title),
@@ -108,9 +113,20 @@ router.put('/:id', authMiddleware, (req, res) => {
       assigned_to = COALESCE(?, assigned_to),
       status = COALESCE(?, status),
       priority = COALESCE(?, priority),
+      operator_id = ?,
       updated_at = datetime('now')
     WHERE id = ?
-  `).run(title, description, location, fault_type, assigned_to, status, priority, req.params.id);
+  `).run(
+    title,
+    description,
+    location,
+    fault_type,
+    assigned_to,
+    status,
+    priority,
+    operator_id !== undefined ? (operator_id !== '' ? parseInt(operator_id) : null) : task.operator_id,
+    req.params.id
+  );
 
   res.json({ message: 'המשימה עודכנה בהצלחה' });
 });

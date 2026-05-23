@@ -11,10 +11,12 @@ router.get('/', authMiddleware, (req, res) => {
   let query = `
     SELECT tl.*,
            u.name as user_name,
-           t.title as task_title
+           t.title as task_title,
+           o.name as operator_name
     FROM time_logs tl
     LEFT JOIN users u ON tl.user_id = u.id
     LEFT JOIN tasks t ON tl.task_id = t.id
+    LEFT JOIN operators o ON tl.operator_id = o.id
     WHERE 1=1
   `;
   const params = [];
@@ -48,9 +50,10 @@ router.get('/', authMiddleware, (req, res) => {
 // GET /api/timelogs/active — get active (running) timer for current user
 router.get('/active', authMiddleware, (req, res) => {
   const active = db.prepare(`
-    SELECT tl.*, t.title as task_title
+    SELECT tl.*, t.title as task_title, o.name as operator_name
     FROM time_logs tl
     LEFT JOIN tasks t ON tl.task_id = t.id
+    LEFT JOIN operators o ON tl.operator_id = o.id
     WHERE tl.user_id = ? AND tl.end_time IS NULL
     ORDER BY tl.start_time DESC LIMIT 1
   `).get(req.user.id);
@@ -59,7 +62,7 @@ router.get('/active', authMiddleware, (req, res) => {
 
 // POST /api/timelogs — start a new time log
 router.post('/', authMiddleware, (req, res) => {
-  const { task_id, equipment_id, activity_type, start_time, location, notes, is_manual, end_time } = req.body;
+  const { task_id, equipment_id, operator_id, activity_type, start_time, location, notes, is_manual, end_time } = req.body;
 
   if (!activity_type) return res.status(400).json({ error: 'סוג פעילות נדרש' });
 
@@ -82,11 +85,12 @@ router.post('/', authMiddleware, (req, res) => {
   }
 
   const result = db.prepare(`
-    INSERT INTO time_logs (task_id, equipment_id, user_id, activity_type, start_time, end_time, duration_minutes, location, notes, is_manual)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO time_logs (task_id, equipment_id, operator_id, user_id, activity_type, start_time, end_time, duration_minutes, location, notes, is_manual)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     task_id || null,
     equipment_id || null,
+    operator_id || null,
     req.user.id,
     activity_type,
     startT,
@@ -131,7 +135,7 @@ router.put('/:id', authMiddleware, (req, res) => {
 
   if (!isOwner && !isAdmin) return res.status(403).json({ error: 'אין הרשאה' });
 
-  const { activity_type, start_time, end_time, location, notes, edit_reason } = req.body;
+  const { activity_type, start_time, end_time, location, notes, edit_reason, operator_id } = req.body;
 
   let duration = log.duration_minutes;
   const newStart = start_time || log.start_time;
@@ -148,6 +152,7 @@ router.put('/:id', authMiddleware, (req, res) => {
       duration_minutes = ?,
       location = COALESCE(?, location),
       notes = COALESCE(?, notes),
+      operator_id = ?,
       is_manual = 1,
       edited_by = ?,
       edit_reason = ?,
@@ -160,6 +165,7 @@ router.put('/:id', authMiddleware, (req, res) => {
     duration,
     location || null,
     notes || null,
+    operator_id !== undefined ? operator_id : log.operator_id,
     req.user.id,
     edit_reason || 'תיקון ידני',
     req.params.id

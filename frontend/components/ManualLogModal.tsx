@@ -10,7 +10,7 @@ const ACTIVITY_TYPES = ['נסיעה', 'טיפול בתקלה', 'התקנה', 'ת
 const EQUIPMENT_ACTIVITIES = new Set(['טיפול בתקלה', 'התקנה', 'תחזוקה', 'בדיקה', 'אחר']);
 
 interface Props {
-  tasks: { id: number; title: string }[];
+  tasks: any[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -28,13 +28,26 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
   const [customActivity, setCustomActivity] = useState('');
   const [equipList, setEquipList]           = useState<any[]>([]);
   const [selectedEquip, setSelectedEquip]   = useState<number | null>(null);
+  const [operatorList, setOperatorList]     = useState<any[]>([]);
+  const [selectedOperator, setSelectedOperator] = useState<number | null>(null);
   const [showDrawer, setShowDrawer]         = useState(false);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     api.equipment.list().then(setEquipList).catch(() => {});
+    api.operators.list().then(setOperatorList).catch(() => {});
   }, []);
+
+  // Pre-fill operator when task is selected
+  useEffect(() => {
+    if (form.task_id) {
+      const task = tasks.find(t => t.id === parseInt(form.task_id));
+      if (task?.operator_id) {
+        setSelectedOperator(task.operator_id);
+      }
+    }
+  }, [form.task_id, tasks]);
 
   function set(key: string, val: string) {
     setForm(f => ({ ...f, [key]: val }));
@@ -67,6 +80,7 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
         activity_type: resolvedActivity,
         task_id: form.task_id ? parseInt(form.task_id) : undefined,
         equipment_id: showEquip ? (selectedEquip ?? undefined) : undefined,
+        operator_id: selectedOperator ?? undefined,
         start_time: form.start_time,
         end_time: form.end_time,
         location: form.location || undefined,
@@ -143,6 +157,21 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
               <select className="input" value={form.task_id} onChange={e => set('task_id', e.target.value)}>
                 <option value="">ללא משימה</option>
                 {tasks.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
+              </select>
+            </div>
+
+            {/* Operator select */}
+            <div>
+              <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
+              <select
+                className="input select-custom"
+                value={selectedOperator ?? ''}
+                onChange={e => setSelectedOperator(e.target.value ? parseInt(e.target.value) : null)}
+              >
+                <option value="">בחר לקוח / מפעיל...</option>
+                {operatorList.map(op => (
+                  <option key={op.id} value={op.id}>{op.name}</option>
+                ))}
               </select>
             </div>
 

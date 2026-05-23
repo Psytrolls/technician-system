@@ -314,6 +314,75 @@ export default function ReportsPage() {
               </div>
             </div>
 
+            {/* Row 3: Operator workload + Completed tasks per day */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+
+              {/* Bar/Donut: Operator workload comparison */}
+              <div className="card">
+                <h2 className="font-bold mb-4">עומס לפי לקוח / מפעיל (שעות עבודה)</h2>
+                {summary.by_operator?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart
+                      data={summary.by_operator}
+                      margin={{ top: 5, right: 10, left: -10, bottom: 25 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: '#e2e8f0' }}
+                        interval={0}
+                      />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v} ש'`} />
+                      <Tooltip
+                        {...TOOLTIP_STYLE}
+                        formatter={(v: any) => [`${v} ש'`, 'שעות עבודה']}
+                      />
+                      <Bar dataKey="hours" radius={[6, 6, 0, 0]} fill="#3b82f6" label={{ position: 'top', fill: '#94a3b8', fontSize: 11, formatter: (v: any) => `${v} ש'` }}>
+                        {summary.by_operator.map((_: any, i: number) => (
+                          <Cell key={i} fill={COLORS[(i + 2) % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <EmptyChart />}
+              </div>
+
+              {/* Line/Bar: completed tasks per day */}
+              <div className="card">
+                <h2 className="font-bold mb-4">משימות שהושלמו לפי יום</h2>
+                {summary.completions_by_day?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <LineChart data={summary.completions_by_day} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: '#94a3b8' }}
+                        tickFormatter={d =>
+                          new Date(d + 'T00:00:00').toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })
+                        }
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `${v}`} />
+                      <Tooltip
+                        {...TOOLTIP_STYLE}
+                        labelFormatter={d =>
+                          new Date(d + 'T00:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })
+                        }
+                        formatter={(v: any) => [`${v}`, 'משימות שהושלמו']}
+                      />
+                      <Line
+                        dataKey="completed_count"
+                        stroke="#10b981"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: '#10b981' }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : <EmptyChart />}
+              </div>
+            </div>
+
             {/* Technician detail table */}
             {summary.by_technician?.length > 0 && (
               <div className="card">

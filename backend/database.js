@@ -235,6 +235,13 @@ function runMigrationsAndSeeding() {
       reviewed_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS operators (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // ── Migrations ─────────────────────────────────────────────────────────────
@@ -277,6 +284,34 @@ function runMigrationsAndSeeding() {
     if (!cols.includes('equipment_id')) {
       activeDb.exec('ALTER TABLE time_logs ADD COLUMN equipment_id INTEGER REFERENCES equipment(id)');
       console.log('✅ time_logs migrated — added equipment_id column');
+    }
+  } catch (e) {}
+
+  // 3) Add operator_id column to time_logs if missing
+  try {
+    const cols = activeDb.prepare("PRAGMA table_info(time_logs)").all().map((c) => c.name);
+    if (!cols.includes('operator_id')) {
+      activeDb.exec('ALTER TABLE time_logs ADD COLUMN operator_id INTEGER REFERENCES operators(id)');
+      console.log('✅ time_logs migrated — added operator_id column');
+    }
+  } catch (e) {}
+
+  // 4) Add operator_id column to tasks if missing
+  try {
+    const cols = activeDb.prepare("PRAGMA table_info(tasks)").all().map((c) => c.name);
+    if (!cols.includes('operator_id')) {
+      activeDb.exec('ALTER TABLE tasks ADD COLUMN operator_id INTEGER REFERENCES operators(id)');
+      console.log('✅ tasks migrated — added operator_id column');
+    }
+  } catch (e) {}
+
+  // 5) Seed default operators if missing
+  try {
+    const opCount = activeDb.prepare('SELECT COUNT(*) as count FROM operators').get();
+    if (opCount.count === 0) {
+      const ins = activeDb.prepare('INSERT INTO operators (name) VALUES (?)');
+      ['חברת אלפא', 'חברת בטא', 'תעשיות גמא'].forEach(name => ins.run(name));
+      console.log('✅ Default operators seeded');
     }
   } catch (e) {}
 

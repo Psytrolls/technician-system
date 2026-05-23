@@ -102,4 +102,15 @@ export const api = {
       return request(`/equipment/stats${qs}`);
     },
   },
+
+  operators: {
+    list: (activeOnly = true) =>
+      request(`/operators${activeOnly ? '' : '?active=all'}`),
+    create: (data: object) =>
+      request('/operators', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: object) =>
+      request(`/operators/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request(`/operators/${id}`, { method: 'DELETE' }),
+  },
 };
