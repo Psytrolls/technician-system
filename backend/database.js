@@ -305,6 +305,15 @@ function runMigrationsAndSeeding() {
     }
   } catch (e) {}
 
+  // 5) Add operator_id column to equipment if missing
+  try {
+    const cols = activeDb.prepare("PRAGMA table_info(equipment)").all().map((c) => c.name);
+    if (!cols.includes('operator_id')) {
+      activeDb.exec('ALTER TABLE equipment ADD COLUMN operator_id INTEGER REFERENCES operators(id)');
+      console.log('✅ equipment migrated — added operator_id column');
+    }
+  } catch (e) {}
+
   // 5) Seed default operators if missing
   try {
     const opCount = activeDb.prepare('SELECT COUNT(*) as count FROM operators').get();

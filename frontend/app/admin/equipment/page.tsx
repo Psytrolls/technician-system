@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import { api, getUser } from '@/lib/api';
 import { PlusCircle, Pencil, Trash2, X, BarChart2 } from 'lucide-react';
 
-const EMPTY_FORM = { name: '', category: '', description: '' };
+const EMPTY_FORM = { name: '', category: '', description: '', operator_id: '' };
 
 export default function EquipmentPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function EquipmentPage() {
 
   const [equipment, setEquipment] = useState<any[]>([]);
   const [stats, setStats]         = useState<any[]>([]);
+  const [operators, setOperators] = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [modal, setModal]         = useState<'create' | 'edit' | null>(null);
   const [editing, setEditing]     = useState<any>(null);
@@ -29,12 +30,14 @@ export default function EquipmentPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [eq, st] = await Promise.all([
+      const [eq, st, ops] = await Promise.all([
         api.equipment.list(false),   // all, including inactive
         api.equipment.stats(),
+        api.operators.list()
       ]);
       setEquipment(eq);
       setStats(st);
+      setOperators(ops);
     } catch {}
     finally { setLoading(false); }
   }
@@ -46,7 +49,12 @@ export default function EquipmentPage() {
     setModal('create');
   }
   function openEdit(eq: any) {
-    setForm({ name: eq.name, category: eq.category || '', description: eq.description || '' });
+    setForm({
+      name: eq.name,
+      category: eq.category || '',
+      description: eq.description || '',
+      operator_id: eq.operator_id ? String(eq.operator_id) : ''
+    });
     setEditing(eq);
     setError('');
     setModal('edit');
@@ -55,11 +63,15 @@ export default function EquipmentPage() {
   async function handleSave() {
     if (!form.name.trim()) { setError('שם נדרש'); return; }
     setSaving(true); setError('');
+    const payload = {
+      ...form,
+      operator_id: form.operator_id ? parseInt(form.operator_id) : null
+    };
     try {
       if (modal === 'create') {
-        await api.equipment.create(form);
+        await api.equipment.create(payload);
       } else {
-        await api.equipment.update(editing.id, form);
+        await api.equipment.update(editing.id, payload);
       }
       setModal(null);
       loadData();
@@ -137,6 +149,7 @@ export default function EquipmentPage() {
                   <thead>
                     <tr>
                       <th>שם</th>
+                      <th>לקוח מפעיל</th>
                       <th>תיאור</th>
                       <th>טיפולים</th>
                       <th>שעות</th>
@@ -150,6 +163,13 @@ export default function EquipmentPage() {
                       return (
                         <tr key={eq.id} style={{ opacity: eq.active ? 1 : 0.5 }}>
                           <td className="font-medium">{eq.name}</td>
+                          <td className="text-sm">
+                            {eq.operator_name ? (
+                              <span className="badge badge-blue">{eq.operator_name}</span>
+                            ) : (
+                              <span className="text-xs" style={{ color: 'var(--muted)' }}>כללי (זמין לכולם)</span>
+                            )}
+                          </td>
                           <td className="text-sm" style={{ color: 'var(--muted)' }}>{eq.description || '—'}</td>
                           <td>{s?.service_count || 0}</td>
                           <td>{s?.total_hours || 0}ש'</td>
@@ -209,6 +229,19 @@ export default function EquipmentPage() {
                 <input className="input" value={form.category}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                   placeholder="למשל: מיזוג אוויר, מחשבים, חשמל..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">לקוח מפעיל משויך (סיווג)</label>
+                <select
+                  className="input"
+                  value={form.operator_id}
+                  onChange={e => setForm(f => ({ ...f, operator_id: e.target.value }))}
+                >
+                  <option value="">כללי (זמין לכל הלקוחות)</option>
+                  {operators.map(op => (
+                    <option key={op.id} value={op.id}>{op.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">תיאור</label>

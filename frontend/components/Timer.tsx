@@ -147,119 +147,13 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
 
         {/* ── Setup form ── */}
         {!activeLog ? (
-          <div className="flex flex-col gap-4">
-
-            {/* Equipment picker button */}
+          <div className="flex flex-col gap-5">
+            
+            {/* Step 1: Activity type */}
             <div>
-              <label className="block text-sm font-medium mb-2 flex items-center gap-1">
-                <Wrench size={14} /> סוג מוצר
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--primary)' }}>
+                שלב 1: מה סוג הפעילות?
               </label>
-              <button
-                onClick={() => setShowDrawer(true)}
-                className="w-full text-right flex items-center justify-between px-4 py-3 rounded-xl transition-all"
-                style={{
-                  border: `2px solid ${selectedEquip ? 'var(--primary)' : 'var(--border)'}`,
-                  background: selectedEquip ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.02)',
-                }}
-              >
-                <ChevronDown size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
-                <span style={{ color: selectedEquip ? 'var(--text)' : 'var(--muted)', fontSize: '0.9rem' }}>
-                  {selectedEquipName ?? 'בחר סוג מוצר...'}
-                </span>
-              </button>
-            </div>
-
-            {/* Task cards */}
-            <div>
-              <label className="block text-sm font-medium mb-2">על איזו משימה אתה עובד?</label>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setSelectedTask(null)}
-                  className="text-right rounded-xl px-3 py-2.5 transition-all"
-                  style={{
-                    border: `2px solid ${selectedTask === null ? 'var(--primary)' : 'var(--border)'}`,
-                    background: selectedTask === null ? 'rgba(59,130,246,0.1)' : 'transparent',
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    {selectedTask === null
-                      ? <CheckCircle size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                      : <Circle size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
-                    }
-                    <span className="text-sm" style={{ color: 'var(--muted)' }}>ללא משימה ספציפית</span>
-                  </div>
-                </button>
-
-                {tasks.map((task: any) => {
-                  const isSel = selectedTask === task.id;
-                  return (
-                    <button
-                      key={task.id}
-                      onClick={() => setSelectedTask(task.id)}
-                      className="text-right rounded-xl px-3 py-2.5 transition-all"
-                      style={{
-                        border: `2px solid ${isSel ? 'var(--primary)' : 'var(--border)'}`,
-                        background: isSel ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.02)',
-                      }}
-                    >
-                      <div className="flex items-start gap-2">
-                        {isSel
-                          ? <CheckCircle size={16} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: 2 }} />
-                          : <Circle size={16} style={{ color: 'var(--muted)', flexShrink: 0, marginTop: 2 }} />
-                        }
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium">{task.title}</span>
-                            {task.priority && (
-                              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{
-                                background: PRIORITY_COLOR[task.priority] + '22',
-                                color: PRIORITY_COLOR[task.priority], fontWeight: 600,
-                              }}>
-                                {PRIORITY_LABEL[task.priority]}
-                              </span>
-                            )}
-                          </div>
-                          {task.location && (
-                            <div className="flex items-center gap-1 mt-0.5 text-xs" style={{ color: 'var(--muted)' }}>
-                              <MapPin size={11} /> {task.location}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Operator select */}
-            <div>
-              <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
-              <select
-                ref={operatorSelectRef}
-                className="input select-custom"
-                value={selectedOperator ?? ''}
-                onChange={e => setSelectedOperator(e.target.value ? parseInt(e.target.value) : null)}
-                style={{
-                  border: activityType === 'טיפול בתקלה' && !selectedOperator 
-                    ? '2px dashed var(--warning)' 
-                    : '1px solid var(--border)',
-                  animation: activityType === 'טיפול בתקלה' && !selectedOperator 
-                    ? 'pulse-border 1.5s infinite alternate' 
-                    : 'none',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <option value="">בחר לקוח / מפעיל...</option>
-                {operatorList.map(op => (
-                  <option key={op.id} value={op.id}>{op.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Activity type */}
-            <div>
-              <label className="block text-sm font-medium mb-2">מה אתה עושה?</label>
               <div className="flex flex-wrap gap-2">
                 {ACTIVITY_TYPES.map(type => (
                   <button
@@ -267,16 +161,14 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
                     onClick={() => {
                       setActivityType(type);
                       setCustomActivity('');
-                      if (type === 'טיפול בתקלה') {
-                        setTimeout(() => {
-                          operatorSelectRef.current?.focus();
-                        }, 100);
-                      }
+                      // Reset cascading items
+                      setSelectedOperator(null);
+                      setSelectedEquip(null);
                     }}
-                    className="btn btn-ghost text-xs py-1 px-3"
+                    className="btn btn-ghost text-xs py-1.5 px-3 rounded-lg transition-all"
                     style={activityType === type
                       ? { background: 'var(--primary)', color: 'white', borderColor: 'var(--primary)' }
-                      : {}}
+                      : { background: 'rgba(255,255,255,0.03)' }}
                   >
                     {type}
                   </button>
@@ -293,22 +185,103 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
               )}
             </div>
 
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium mb-1 flex items-center gap-1">
-                <MapPin size={14} /> מיקום (אופציונלי)
+            {/* Cascading Step 2: Select Operator (Required for 'טיפול בתקלה', optional/hidden otherwise) */}
+            {activityType === 'טיפול בתקלה' && (
+              <div className="fade-in border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--primary)' }}>
+                  שלב 2: עבור איזה מפעיל / לקוח?
+                </label>
+                
+                {/* Optional Task pre-selection which pre-fills the operator */}
+                {tasks.filter(t => t.status !== 'completed').length > 0 && (
+                  <div className="mb-3">
+                    <span className="text-xs block mb-1.5" style={{ color: 'var(--muted)' }}>שיוך משימה קיימת (אופציונלי):</span>
+                    <select
+                      className="input text-xs py-1"
+                      value={selectedTask ?? ''}
+                      onChange={e => {
+                        const val = e.target.value ? parseInt(e.target.value) : null;
+                        setSelectedTask(val);
+                      }}
+                    >
+                      <option value="">ללא משימה ספציפית</option>
+                      {tasks.filter(t => t.status !== 'completed').map(task => (
+                        <option key={task.id} value={task.id}>{task.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <select
+                  ref={operatorSelectRef}
+                  className="input select-custom"
+                  value={selectedOperator ?? ''}
+                  onChange={e => {
+                    setSelectedOperator(e.target.value ? parseInt(e.target.value) : null);
+                    setSelectedEquip(null); // Reset product selection when operator changes
+                  }}
+                  style={{ border: !selectedOperator ? '1px solid var(--warning)' : '1px solid var(--border)' }}
+                >
+                  <option value="">-- בחר מפעיל / לקוח --</option>
+                  {operatorList.map(op => (
+                    <option key={op.id} value={op.id}>{op.name}</option>
+                  ))}
+                </select>
+                {!selectedOperator && (
+                  <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--warning)' }}>
+                    <span>⚠️</span> נא לבחור לקוח/מפעיל להמשך
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Cascading Step 3: Select Product Type (Shown only after Operator is selected for 'טיפול בתקלה') */}
+            {activityType === 'טיפול בתקלה' && selectedOperator && (
+              <div className="fade-in border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--primary)' }}>
+                  שלב 3: איזה סוג מוצר?
+                </label>
+                <button
+                  onClick={() => setShowDrawer(true)}
+                  className="w-full text-right flex items-center justify-between px-4 py-3 rounded-xl transition-all"
+                  style={{
+                    border: `2px solid ${selectedEquip ? 'var(--primary)' : 'var(--warning)'}`,
+                    background: selectedEquip ? 'rgba(59,130,246,0.08)' : 'rgba(245,158,11,0.02)',
+                  }}
+                >
+                  <ChevronDown size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
+                  <span style={{ color: selectedEquip ? 'var(--text)' : 'var(--muted)', fontSize: '0.9rem' }}>
+                    {selectedEquipName ?? '-- בחר סוג מוצר --'}
+                  </span>
+                </button>
+                {!selectedEquip && (
+                  <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--warning)' }}>
+                    <span>⚠️</span> נא לבחור את סוג המוצר לטיפול
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Location (optional) */}
+            <div className="border-t pt-4" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+              <label className="block text-xs mb-1.5 flex items-center gap-1" style={{ color: 'var(--muted)' }}>
+                <MapPin size={13} /> מיקום פעילות (אופציונלי)
               </label>
               <input
-                className="input"
-                placeholder="הכנס מיקום..."
+                className="input text-sm"
+                placeholder="מיקום, קו, עמדה..."
                 value={location}
                 onChange={e => setLocation(e.target.value)}
               />
             </div>
 
-            <button className="btn btn-success w-full justify-center" onClick={startTimer} disabled={loading}>
+            <button
+              className="btn btn-success w-full justify-center text-sm py-3 rounded-xl font-bold mt-2"
+              onClick={startTimer}
+              disabled={loading || (activityType === 'טיפול בתקלה' && (!selectedOperator || !selectedEquip))}
+            >
               <Play size={18} />
-              {loading ? 'מפעיל...' : 'התחל טיימר'}
+              {loading ? 'מפעיל...' : 'התחל עבודה'}
             </button>
           </div>
 
@@ -341,7 +314,7 @@ export default function Timer({ tasks, onLogCreated }: TimerProps) {
       {/* Equipment drawer */}
       {showDrawer && (
         <EquipmentDrawer
-          equipment={equipList}
+          equipment={equipList.filter(e => e.operator_id === selectedOperator || e.operator_id === null)}
           selected={selectedEquip}
           onSelect={setSelectedEquip}
           onClose={() => setShowDrawer(false)}

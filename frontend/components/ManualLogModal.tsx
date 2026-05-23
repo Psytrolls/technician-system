@@ -108,9 +108,9 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
 
           <div className="flex flex-col gap-4">
 
-            {/* Activity type */}
+            {/* Step 1: Activity type */}
             <div>
-              <label className="block text-sm font-medium mb-1">סוג פעילות *</label>
+              <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--primary)' }}>סוג פעילות *</label>
               <select
                 className="input"
                 value={form.activity_type}
@@ -119,11 +119,7 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
                   set('activity_type', val);
                   setCustomActivity('');
                   setSelectedEquip(null);
-                  if (val === 'טיפול בתקלה') {
-                    setTimeout(() => {
-                      operatorSelectRef.current?.focus();
-                    }, 100);
-                  }
+                  setSelectedOperator(null);
                 }}
               >
                 {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -139,62 +135,58 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
               )}
             </div>
 
-            {/* Equipment picker — shown for repair/service activities */}
-            {showEquip && (
-              <div>
-                <label className="block text-sm font-medium mb-1 flex items-center gap-1">
-                  <Wrench size={14} /> סוג מוצר
-                </label>
+            {/* Cascading Step 2: Operator select (Required for 'טיפול בתקלה') */}
+            {form.activity_type === 'טיפול בתקלה' && (
+              <div className="fade-in border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--primary)' }}>לקוח / מפעיל *</label>
+                
+                {/* Optional Task selection */}
+                <div className="mb-2">
+                  <span className="text-xs block mb-1" style={{ color: 'var(--muted)' }}>שיוך משימה קיימת (אופציונלי):</span>
+                  <select className="input text-xs py-1" value={form.task_id} onChange={e => set('task_id', e.target.value)}>
+                    <option value="">ללא משימה</option>
+                    {tasks.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
+                  </select>
+                </div>
+
+                <select
+                  ref={operatorSelectRef}
+                  className="input select-custom"
+                  value={selectedOperator ?? ''}
+                  onChange={e => {
+                    setSelectedOperator(e.target.value ? parseInt(e.target.value) : null);
+                    setSelectedEquip(null);
+                  }}
+                  style={{ border: !selectedOperator ? '1px solid var(--warning)' : '1px solid var(--border)' }}
+                >
+                  <option value="">-- בחר מפעיל / לקוח --</option>
+                  {operatorList.map(op => (
+                    <option key={op.id} value={op.id}>{op.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Cascading Step 3: Product Type select (only shown after Operator selection) */}
+            {form.activity_type === 'טיפול בתקלה' && selectedOperator && (
+              <div className="fade-in border-t pt-3" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <label className="block text-sm font-semibold mb-1" style={{ color: 'var(--primary)' }}>סוג מוצר *</label>
                 <button
                   type="button"
                   onClick={() => setShowDrawer(true)}
                   className="w-full text-right flex items-center justify-between px-4 py-3 rounded-xl transition-all"
                   style={{
-                    border: `2px solid ${selectedEquip ? 'var(--primary)' : 'var(--border)'}`,
-                    background: selectedEquip ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.02)',
+                    border: `2px solid ${selectedEquip ? 'var(--primary)' : 'var(--warning)'}`,
+                    background: selectedEquip ? 'rgba(59,130,246,0.08)' : 'rgba(245,158,11,0.02)',
                   }}
                 >
                   <ChevronDown size={16} style={{ color: 'var(--muted)', flexShrink: 0 }} />
                   <span style={{ color: selectedEquip ? 'var(--text)' : 'var(--muted)', fontSize: '0.9rem' }}>
-                    {selectedEquipName ?? 'בחר סוג מוצר...'}
+                    {selectedEquipName ?? '-- בחר סוג מוצר --'}
                   </span>
                 </button>
               </div>
             )}
-
-            {/* Task */}
-            <div>
-              <label className="block text-sm font-medium mb-1">משימה</label>
-              <select className="input" value={form.task_id} onChange={e => set('task_id', e.target.value)}>
-                <option value="">ללא משימה</option>
-                {tasks.map((t: any) => <option key={t.id} value={t.id}>{t.title}</option>)}
-              </select>
-            </div>
-
-            {/* Operator select */}
-            <div>
-              <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
-              <select
-                ref={operatorSelectRef}
-                className="input select-custom"
-                value={selectedOperator ?? ''}
-                onChange={e => setSelectedOperator(e.target.value ? parseInt(e.target.value) : null)}
-                style={{
-                  border: form.activity_type === 'טיפול בתקלה' && !selectedOperator 
-                    ? '2px dashed var(--warning)' 
-                    : '1px solid var(--border)',
-                  animation: form.activity_type === 'טיפול בתקלה' && !selectedOperator 
-                    ? 'pulse-border 1.5s infinite alternate' 
-                    : 'none',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <option value="">בחר לקוח / מפעיל...</option>
-                {operatorList.map(op => (
-                  <option key={op.id} value={op.id}>{op.name}</option>
-                ))}
-              </select>
-            </div>
 
             {/* Times */}
             <div className="grid grid-cols-2 gap-3">
@@ -267,7 +259,7 @@ export default function ManualLogModal({ tasks, onClose, onSaved }: Props) {
       {/* Equipment wheel drawer — renders above modal */}
       {showDrawer && (
         <EquipmentDrawer
-          equipment={equipList}
+          equipment={equipList.filter(e => e.operator_id === selectedOperator || e.operator_id === null)}
           selected={selectedEquip}
           onSelect={setSelectedEquip}
           onClose={() => setShowDrawer(false)}

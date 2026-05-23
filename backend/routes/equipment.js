@@ -6,40 +6,68 @@ const router = express.Router();
 
 // GET /api/equipment — all users (technicians need this to pick equipment)
 router.get('/', authMiddleware, (req, res) => {
-  const { active } = req.query;
-  let query = 'SELECT * FROM equipment';
-  if (active !== 'all') query += ' WHERE active = 1';
-  query += ' ORDER BY category, name';
-  res.json(db.prepare(query).all());
+  const { active, operator_id } = req.query;
+  const conditions = [];
+  const params = [];
+
+  if (active !== 'all') {
+    conditions.push('e.active = 1');
+  }
+
+  if (operator_id) {
+    conditions.push('(e.operator_id = ? OR e.operator_id IS NULL)');
+    params.push(parseInt(operator_id));
+  }
+
+  let query = `
+    SELECT e.*, o.name as operator_name 
+    FROM equipment e
+    LEFT JOIN operators o ON e.operator_id = o.id
+  `;
+
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
+  query += ' ORDER BY e.category, e.name';
+
+  res.json(db.prepare(query).all(...params));
 });
 
 // POST /api/equipment — admin only
 router.post('/', authMiddleware, adminOnly, (req, res) => {
-  const { name, category, description } = req.body;
+  const { name, category, description, operator_id } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'שם נדרש' });
   const result = db.prepare(
-    'INSERT INTO equipment (name, category, description) VALUES (?, ?, ?)'
-  ).run(name.trim(), category?.trim() || null, description?.trim() || null);
+    'INSERT INTO equipment (name, category, description, operator_id) VALUES (?, ?, ?, ?)'
+  ).run(
+    name.trim(),
+    category?.trim() || null,
+    description?.trim() || null,
+    operator_id ? parseInt(operator_id) : null
+  );
   res.status(201).json({ id: result.lastInsertRowid, name, category });
 });
 
 // PUT /api/equipment/:id — admin only
 router.put('/:id', authMiddleware, adminOnly, (req, res) => {
-  const { name, category, description, active } = req.body;
+  const { name, category, description, active, operator_id } = req.body;
   const eq = db.prepare('SELECT * FROM equipment WHERE id = ?').get(req.params.id);
   if (!eq) return res.status(404).json({ error: 'ציוד לא נמצא' });
+  
   db.prepare(`
     UPDATE equipment SET
-      name        = COALESCE(?, name),
-      category    = COALESCE(?, category),
-      description = COALESCE(?, description),
-      active      = COALESCE(?, active)
+      name        = ?,
+      category    = ?,
+      description = ?,
+      active      = ?,
+      operator_id = ?
     WHERE id = ?
   `).run(
-    name ?? null,
-    category ?? null,
-    description ?? null,
-    active !== undefined ? (active ? 1 : 0) : null,
+    name !== undefined ? name : eq.name,
+    category !== undefined ? category : eq.category,
+    description !== undefined ? description : eq.description,
+    active !== undefined ? (active ? 1 : 0) : eq.active,
+    operator_id !== undefined ? (operator_id ? parseInt(operator_id) : null) : eq.operator_id,
     req.params.id
   );
   res.json({ message: 'עודכן בהצלחה' });
