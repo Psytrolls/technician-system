@@ -31,10 +31,10 @@ const PRIORITY_LABELS: Record<string, string> = {
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-function formatTime(mins: number) {
+function formatMinutes(mins: number) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return h > 0 ? `${h}ש' ${m}ד'` : `${m}ד'`;
+  return `${h}:${String(m).padStart(2, '0')}`;
 }
 
 export default function TechDashboard() {
@@ -108,27 +108,21 @@ export default function TechDashboard() {
 
         {/* Today Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: 'var(--primary)' }}>
-              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                {Math.floor(todayMinutes / 60) > 0 && <><span>{Math.floor(todayMinutes / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
-                <span>{todayMinutes % 60}</span><span className="text-base font-normal">ד'</span>
-              </span>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div style={{ color: 'var(--primary)', fontFamily: 'monospace', fontSize: '2rem', fontWeight: 700, letterSpacing: 2, lineHeight: 1.1 }} dir="ltr">
+              {formatMinutes(todayMinutes)}
             </div>
-            <div className="stat-label">סה"כ היום</div>
+            <div className="stat-label" style={{ marginTop: 4 }}>שעות:דקות היום</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: 'var(--warning)' }}>
-              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                {Math.floor(travelMinutes / 60) > 0 && <><span>{Math.floor(travelMinutes / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
-                <span>{travelMinutes % 60}</span><span className="text-base font-normal">ד'</span>
-              </span>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div style={{ color: 'var(--warning)', fontFamily: 'monospace', fontSize: '2rem', fontWeight: 700, letterSpacing: 2, lineHeight: 1.1 }} dir="ltr">
+              {formatMinutes(travelMinutes)}
             </div>
-            <div className="stat-label">נסיעות היום</div>
+            <div className="stat-label" style={{ marginTop: 4 }}>נסיעות היום</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: 'var(--success)' }}>{tasks.length}</div>
-            <div className="stat-label">משימות פתוחות</div>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div style={{ color: 'var(--success)', fontSize: '2rem', fontWeight: 700, lineHeight: 1.1 }}>{tasks.length}</div>
+            <div className="stat-label" style={{ marginTop: 4 }}>משימות פתוחות</div>
           </div>
         </div>
 
@@ -222,7 +216,7 @@ export default function TechDashboard() {
                       <td><span className="badge badge-blue">{log.activity_type}</span></td>
                       <td className="text-sm">{log.task_title || '—'}</td>
                       <td className="text-sm">
-                        {log.duration_minutes ? formatTime(log.duration_minutes) : (log.end_time ? '—' : (
+                        {log.duration_minutes ? formatMinutes(log.duration_minutes) : (log.end_time ? '—' : (
                           <span className="badge badge-green">פעיל</span>
                         ))}
                       </td>

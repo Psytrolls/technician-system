@@ -18,7 +18,12 @@ function formatDuration(mins: number) {
   if (!mins) return '—';
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return h > 0 ? `${h}ש' ${m}ד'` : `${m}ד'`;
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}` : `0:${String(m).padStart(2, '0')}`;
+}
+function formatClock(mins: number) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}:${String(m).padStart(2, '0')}`;
 }
 function toDatetimeLocal(iso: string) {
   if (!iso) return '';
@@ -158,27 +163,21 @@ export default function TechLogsPage() {
 
         {/* Period stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: '#3b82f6' }}>
-              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                {Math.floor(totalMins / 60) > 0 && <><span>{Math.floor(totalMins / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
-                <span>{totalMins % 60}</span><span className="text-base font-normal">ד'</span>
-              </span>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div style={{ color: '#3b82f6', fontFamily: 'monospace', fontSize: '2rem', fontWeight: 700, letterSpacing: 2, lineHeight: 1.1 }} dir="ltr">
+              {formatClock(totalMins)}
             </div>
-            <div className="stat-label">סה"כ בתקופה</div>
+            <div className="stat-label" style={{ marginTop: 4 }}>שעות:דקות בתקופה</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: '#f59e0b' }}>
-              <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
-                {Math.floor(travelMins / 60) > 0 && <><span>{Math.floor(travelMins / 60)}</span><span className="text-base font-normal">ש'&nbsp;</span></>}
-                <span>{travelMins % 60}</span><span className="text-base font-normal">ד'</span>
-              </span>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div style={{ color: '#f59e0b', fontFamily: 'monospace', fontSize: '2rem', fontWeight: 700, letterSpacing: 2, lineHeight: 1.1 }} dir="ltr">
+              {formatClock(travelMins)}
             </div>
-            <div className="stat-label">נסיעות</div>
+            <div className="stat-label" style={{ marginTop: 4 }}>נסיעות</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: '#22c55e' }}>{completedLogs.length}</div>
-            <div className="stat-label">פעילויות</div>
+          <div className="stat-card" style={{ textAlign: 'center' }}>
+            <div style={{ color: '#22c55e', fontSize: '2rem', fontWeight: 700, lineHeight: 1.1 }}>{completedLogs.length}</div>
+            <div className="stat-label" style={{ marginTop: 4 }}>פעילויות</div>
           </div>
         </div>
 
