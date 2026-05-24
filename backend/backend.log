@@ -116,3 +116,8 @@
 ℹ️ No DATABASE_URL found. Operating in local SQLite-only mode.
 ✅ equipment_operators join table created and seeded from equipment table
 🚀 Server running at http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server.js`[39m
+ℹ️ No DATABASE_URL found. Operating in local SQLite-only mode.
+✅ equipment_operators join table created and seeded from equipment table
+🚀 Server running at http://localhost:4000
