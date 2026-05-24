@@ -57,8 +57,8 @@ export default function UsersPage() {
     if (modal === 'create' && !form.password) { setError('סיסמה נדרשת'); return; }
     setSaving(true); setError('');
 
-    // If editing an admin user and changing password — require secret code
-    if (modal === 'edit' && editingUser?.role === 'admin' && form.password) {
+    // If editing the main admin user ('admin') and changing password — require secret code
+    if (modal === 'edit' && editingUser?.username === 'admin' && form.password) {
       setSaving(false);
       setPendingPasswordSave(true);
       setSecretCode('');
@@ -166,7 +166,7 @@ export default function UsersPage() {
                           <button className="btn btn-ghost p-2" onClick={() => openEdit(u)} title="עריכה">
                             <Pencil size={15} />
                           </button>
-                          {u.id !== user?.id && u.role !== 'admin' && (
+                          {u.id !== user?.id && (user?.username === 'admin' || u.role !== 'admin') && (
                             <button
                               className={`btn p-2 ${u.active ? 'btn-danger' : 'btn-success'}`}
                               onClick={() => toggleActive(u)}
@@ -175,7 +175,7 @@ export default function UsersPage() {
                               {u.active ? <UserX size={15} /> : <UserCheck size={15} />}
                             </button>
                           )}
-                          {u.role !== 'admin' && (
+                          {(user?.username === 'admin' ? u.username !== 'admin' : u.role !== 'admin') && (
                             <button
                               className="btn p-2"
                               style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
