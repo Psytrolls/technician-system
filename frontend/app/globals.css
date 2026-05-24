@@ -152,17 +152,16 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   direction: ltr !important;
 }
 
-/* Hide native datepicker indicator and make the whole date field clickable to open calendar */
+/* Style date inputs for premium dark mode support and high contrast */
 input[type="date"] {
-  position: relative;
+  color-scheme: dark;
 }
+
 input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
   cursor: pointer;
-  z-index: 5;
+  transition: opacity 0.15s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
 }

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { api, getUser } from '@/lib/api';
 import { 
-  Activity, Calendar, User, Clock, Truck, Wrench, MapPin, Coffee, AlertCircle, ClipboardList, Briefcase 
+  Activity, User, Clock, Truck, Wrench, MapPin, Coffee, AlertCircle, ClipboardList, Briefcase 
 } from 'lucide-react';
 
 export default function TrackerPage() {
@@ -148,11 +148,9 @@ export default function TrackerPage() {
             <div style={{ flex: 1, minWidth: 200 }}>
               <label className="block text-sm font-medium mb-1">בחר תאריך *</label>
               <div className="flex items-center gap-2 relative">
-                <Calendar size={16} style={{ position: 'absolute', right: 12, color: 'var(--muted)' }} />
                 <input
                   type="date"
                   className="input"
-                  style={{ paddingRight: 36, width: '100%' }}
                   value={selectedDate}
                   onChange={e => setSelectedDate(e.target.value)}
                 />
