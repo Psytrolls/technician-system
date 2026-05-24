@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { api, getUser } from '@/lib/api';
 import { PlusCircle, Pencil, Trash2, X } from 'lucide-react';
+import TaskTimeline from '@/components/TaskTimeline';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'ממתין', in_progress: 'בעבודה', completed: 'הושלם', cancelled: 'בוטל',
@@ -205,68 +206,82 @@ export default function TasksPage() {
       {/* Modal */}
       {modal && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
-          <div className="modal">
+          <div className="modal" style={{ maxWidth: modal === 'edit' ? 820 : 500 }}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold">{modal === 'create' ? 'משימה חדשה' : 'עריכת משימה'}</h2>
               <button onClick={() => setModal(null)} className="btn btn-ghost p-2"><X size={18} /></button>
             </div>
-            <div className="flex flex-col gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">כותרת *</label>
-                <input className="input" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} placeholder="כותרת המשימה" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">תיאור</label>
-                <textarea className="input" rows={2} value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="תיאור המשימה..." />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+            
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Form inputs */}
+              <div className="flex-1 flex flex-col gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">מיקום</label>
-                  <input className="input" value={form.location} onChange={e => setForm(f => ({...f, location: e.target.value}))} placeholder="כתובת / מיקום" />
+                  <label className="block text-sm font-medium mb-1">כותרת *</label>
+                  <input className="input" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} placeholder="כותרת המשימה" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
-                  <select className="input" value={form.operator_id} onChange={e => setForm(f => ({...f, operator_id: e.target.value}))}>
-                    <option value="">ללא לקוח / מפעיל</option>
-                    {operators.map((op: any) => <option key={op.id} value={op.id}>{op.name}</option>)}
-                  </select>
+                  <label className="block text-sm font-medium mb-1">תיאור</label>
+                  <textarea className="input" rows={2} value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="תיאור המשימה..." />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">סוג תקלה</label>
-                  <select className="input" value={form.fault_type} onChange={e => setForm(f => ({...f, fault_type: e.target.value}))}>
-                    <option value="">בחר...</option>
-                    {FAULT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">מיקום</label>
+                    <input className="input" value={form.location} onChange={e => setForm(f => ({...f, location: e.target.value}))} placeholder="כתובת / מיקום" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">לקוח / מפעיל</label>
+                    <select className="input" value={form.operator_id} onChange={e => setForm(f => ({...f, operator_id: e.target.value}))}>
+                      <option value="">ללא לקוח / מפעיל</option>
+                      {operators.map((op: any) => <option key={op.id} value={op.id}>{op.name}</option>)}
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">הקצה לטכנאי</label>
-                  <select className="input" value={form.assigned_to} onChange={e => setForm(f => ({...f, assigned_to: e.target.value}))}>
-                    <option value="">לא הוקצה</option>
-                    <option value="0">👥 כל הטכנאים</option>
-                    {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                  </select>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">סוג תקלה</label>
+                    <select className="input" value={form.fault_type} onChange={e => setForm(f => ({...f, fault_type: e.target.value}))}>
+                      <option value="">בחר...</option>
+                      {FAULT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">הקצה לטכנאי</label>
+                    <select className="input" value={form.assigned_to} onChange={e => setForm(f => ({...f, assigned_to: e.target.value}))}>
+                      <option value="">לא הוקצה</option>
+                      <option value="0">👥 כל הטכנאים</option>
+                      {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">עדיפות</label>
+                    <select className="input" value={form.priority} onChange={e => setForm(f => ({...f, priority: e.target.value}))}>
+                      <option value="low">נמוכה</option>
+                      <option value="medium">בינונית</option>
+                      <option value="high">גבוהה</option>
+                      <option value="urgent">דחוף</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">עדיפות</label>
-                  <select className="input" value={form.priority} onChange={e => setForm(f => ({...f, priority: e.target.value}))}>
-                    <option value="low">נמוכה</option>
-                    <option value="medium">בינונית</option>
-                    <option value="high">גבוהה</option>
-                    <option value="urgent">דחוף</option>
-                  </select>
+
+                {error && <div className="text-sm py-2 px-4 rounded-lg" style={{ background: '#7f1d1d', color: '#fca5a5' }}>{error}</div>}
+
+                <div className="flex gap-3 mt-2">
+                  <button className="btn btn-primary flex-1 justify-center" onClick={handleSave} disabled={saving}>
+                    {saving ? 'שומר...' : 'שמור'}
+                  </button>
+                  <button className="btn btn-ghost flex-1 justify-center" onClick={() => setModal(null)}>ביטול</button>
                 </div>
               </div>
 
-              {error && <div className="text-sm py-2 px-4 rounded-lg" style={{ background: '#7f1d1d', color: '#fca5a5' }}>{error}</div>}
-
-              <div className="flex gap-3 mt-2">
-                <button className="btn btn-primary flex-1 justify-center" onClick={handleSave} disabled={saving}>
-                  {saving ? 'שומר...' : 'שמור'}
-                </button>
-                <button className="btn btn-ghost flex-1 justify-center" onClick={() => setModal(null)}>ביטול</button>
-              </div>
+              {/* Task History Timeline (only when editing) */}
+              {modal === 'edit' && editingTask && (
+                <div style={{ width: 280, borderRight: '1px solid #2d3b55', paddingRight: 20, display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ fontSize: '0.88rem', fontWeight: 'bold', marginBottom: 12, color: 'var(--muted)' }}>היסטוריית פעילות</h3>
+                  <div style={{ flex: 1, overflowY: 'auto', maxHeight: 380, paddingLeft: 8 }} className="custom-scrollbar">
+                    <TaskTimeline taskId={editingTask.id} />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

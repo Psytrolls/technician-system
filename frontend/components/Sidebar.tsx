@@ -4,6 +4,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { getUser, logout } from '@/lib/api';
 import { LayoutDashboard, ClipboardList, Users, BarChart3, LogOut, Wrench, Clock, Settings, Briefcase } from 'lucide-react';
 
+import NotificationCenter from './NotificationCenter';
+
 const adminLinks = [
   { href: '/admin',           label: 'דאשבורד',  icon: LayoutDashboard },
   { href: '/admin/tasks',     label: 'משימות',   icon: ClipboardList },
@@ -55,6 +57,11 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      {/* Notifications */}
+      <div className="mb-2">
+        <NotificationCenter />
+      </div>
 
       {/* Logout */}
       <button onClick={logout} className="nav-item w-full text-right" style={{ color: 'var(--danger)' }}>

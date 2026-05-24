@@ -61,6 +61,7 @@ export const api = {
     create: (data: object) => request('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: object) => request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => request(`/tasks/${id}`, { method: 'DELETE' }),
+    history: (id: number) => request(`/tasks/${id}/history`),
   },
 
   timelogs: {
@@ -112,5 +113,11 @@ export const api = {
       request(`/operators/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) =>
       request(`/operators/${id}`, { method: 'DELETE' }),
+  },
+
+  notifications: {
+    list: () => request('/notifications'),
+    readAll: () => request('/notifications/read-all', { method: 'POST' }),
+    read: (id: number) => request(`/notifications/${id}/read`, { method: 'POST' }),
   },
 };

@@ -98,8 +98,30 @@ router.post('/', authMiddleware, (req, res) => {
     duration,
     location || null,
     notes || null,
-    is_manual ? 1 : 0
   );
+
+  // If the log is linked to a task, record it in task_history
+  if (task_id) {
+    let action = 'edited';
+    let details = `החל פעילות: ${activity_type}`;
+
+    if (activity_type === 'נסיעה' || activity_type === 'נסיעה למחסן') {
+      action = 'started_travel';
+      details = `יצא לדרך (${activity_type === 'נסיעה' ? 'נסיעה ללקוח' : 'נסיעה למחסן'})`;
+    } else if (activity_type === 'טיפול בתקלה') {
+      action = 'started_work';
+      details = 'החל טיפול בתקלה בשטח';
+    }
+
+    try {
+      db.prepare(`
+        INSERT INTO task_history (task_id, user_id, action, details)
+        VALUES (?, ?, ?, ?)
+      `).run(task_id, req.user.id, action, details);
+    } catch (e) {
+      console.error('Failed to log task history:', e);
+    }
+  }
 
   res.status(201).json({ id: result.lastInsertRowid, message: 'הטיימר הופעל' });
 });
