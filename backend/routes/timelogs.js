@@ -98,6 +98,7 @@ router.post('/', authMiddleware, (req, res) => {
     duration,
     location || null,
     notes || null,
+    is_manual ? 1 : 0
   );
 
   // If the log is linked to a task, record it in task_history
