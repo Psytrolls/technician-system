@@ -9,6 +9,7 @@ const reportRoutes    = require('./routes/reports');
 const equipmentRoutes = require('./routes/equipment');
 const operatorRoutes  = require('./routes/operators');
 const notificationRoutes = require('./routes/notifications');
+const validatorChecksRoutes = require('./routes/validator_checks');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -30,6 +31,7 @@ app.use('/api/reports',   reportRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/operators', operatorRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/validator-checks', validatorChecksRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

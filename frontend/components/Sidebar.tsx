@@ -2,23 +2,25 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getUser, logout } from '@/lib/api';
-import { LayoutDashboard, ClipboardList, Users, BarChart3, LogOut, Wrench, Clock, Settings, Briefcase, Activity } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Users, BarChart3, LogOut, Wrench, Clock, Settings, Briefcase, Activity, CheckSquare } from 'lucide-react';
 
 import NotificationCenter from './NotificationCenter';
 
 const adminLinks = [
-  { href: '/admin',           label: 'דאשבורד',  icon: LayoutDashboard },
-  { href: '/admin/tasks',     label: 'משימות',   icon: ClipboardList },
-  { href: '/admin/users',     label: 'משתמשים',  icon: Users },
-  { href: '/admin/equipment', label: 'סוג מוצר', icon: Wrench },
-  { href: '/admin/operators', label: 'לקוחות / מפעילים', icon: Briefcase },
-  { href: '/admin/reports',   label: 'דוחות',    icon: BarChart3 },
-  { href: '/admin/tracker',   label: 'מעקב טכנאים', icon: Activity },
+  { href: '/admin',                     label: 'דאשבורד',         icon: LayoutDashboard },
+  { href: '/admin/tasks',               label: 'משימות',          icon: ClipboardList },
+  { href: '/admin/users',               label: 'משתמשים',         icon: Users },
+  { href: '/admin/equipment',           label: 'סוג מוצר',        icon: Wrench },
+  { href: '/admin/operators',           label: 'לקוחות / מפעילים', icon: Briefcase },
+  { href: '/admin/reports',             label: 'דוחות',           icon: BarChart3 },
+  { href: '/admin/tracker',             label: 'מעקב טכנאים',      icon: Activity },
+  { href: '/admin/validator-checks',    label: 'בדיקת וולידטורים', icon: CheckSquare },
 ];
 
 const techLinks = [
-  { href: '/tech', label: 'עבודה שלי', icon: Wrench },
-  { href: '/tech/logs', label: 'היסטוריה', icon: Clock },
+  { href: '/tech',                      label: 'עבודה שלי',        icon: Wrench },
+  { href: '/tech/logs',                 label: 'היסטוריה',         icon: Clock },
+  { href: '/tech/validator-checks',     label: 'בדיקת וולידטורים', icon: CheckSquare },
 ];
 
 export default function Sidebar() {

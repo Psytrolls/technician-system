@@ -120,4 +120,20 @@ export const api = {
     readAll: () => request('/notifications/read-all', { method: 'POST' }),
     read: (id: number) => request(`/notifications/${id}/read`, { method: 'POST' }),
   },
+
+  validatorChecks: {
+    listCards: () => request('/validator-checks/cards'),
+    createCard: (data: object) => request('/validator-checks/cards', { method: 'POST', body: JSON.stringify(data) }),
+    updateCard: (id: number, data: object) => request(`/validator-checks/cards/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCard: (id: number) => request(`/validator-checks/cards/${id}`, { method: 'DELETE' }),
+    listChecks: (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return request(`/validator-checks${qs}`);
+    },
+    createCheck: (data: object) => request('/validator-checks', { method: 'POST', body: JSON.stringify(data) }),
+    exportChecksUrl: (params?: Record<string, string>) => {
+      const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+      return `/api/validator-checks/export${qs}`;
+    }
+  }
 };

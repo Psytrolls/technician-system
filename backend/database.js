@@ -262,6 +262,24 @@ function runMigrationsAndSeeding() {
       details TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS rav_kav_cards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      card_number TEXT NOT NULL UNIQUE,
+      short_number TEXT NOT NULL UNIQUE,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS validator_checks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      operator_id INTEGER NOT NULL REFERENCES operators(id),
+      bus_number TEXT NOT NULL,
+      validator_number INTEGER NOT NULL,
+      card_id INTEGER NOT NULL REFERENCES rav_kav_cards(id),
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   // ── Migrations ─────────────────────────────────────────────────────────────
@@ -354,13 +372,18 @@ function runMigrationsAndSeeding() {
 
   // 5) Seed default operators if missing
   try {
-    const opCount = activeDb.prepare('SELECT COUNT(*) as count FROM operators').get();
-    if (opCount.count === 0) {
-      const ins = activeDb.prepare('INSERT INTO operators (name) VALUES (?)');
-      ['חברת אלפא', 'חברת בטא', 'תעשיות גמא'].forEach(name => ins.run(name));
-      console.log('✅ Default operators seeded');
-    }
-  } catch (e) {}
+    const defaultOps = ['דן באר שבע', 'דן בדרום', 'חברת אלפא', 'חברת בטא', 'תעשיות גמא'];
+    const ins = activeDb.prepare('INSERT INTO operators (name) VALUES (?)');
+    defaultOps.forEach(name => {
+      const exists = activeDb.prepare('SELECT 1 FROM operators WHERE name = ?').get(name);
+      if (!exists) {
+        ins.run(name);
+        console.log(`✅ Operator seeded: ${name}`);
+      }
+    });
+  } catch (e) {
+    console.error('❌ Failed to seed default operators:', e);
+  }
 
   // ── Seed default users ─────────────────────────────────────────────────────
   const userCount = activeDb.prepare('SELECT COUNT(*) as count FROM users').get();
