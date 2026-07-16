@@ -146,7 +146,12 @@ router.get('/', authMiddleware, (req, res) => {
       ORDER BY vc.created_at DESC
     `).all(...params);
 
-    res.json(checks);
+    const formattedChecks = checks.map(c => ({
+      ...c,
+      created_at: c.created_at.includes('T') ? c.created_at : c.created_at.replace(' ', 'T') + 'Z'
+    }));
+
+    res.json(formattedChecks);
   } catch (err) {
     console.error('Failed to list checks:', err);
     res.status(500).json({ error: 'שגיאה בטעינת הבדיקות' });
@@ -180,9 +185,9 @@ router.post('/', authMiddleware, (req, res) => {
     }
 
     const result = db.prepare(`
-      INSERT INTO validator_checks (operator_id, bus_number, validator_number, card_id, user_id)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(operator_id, bus_number.trim(), valNum, card_id, req.user.id);
+      INSERT INTO validator_checks (operator_id, bus_number, validator_number, card_id, user_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(operator_id, bus_number.trim(), valNum, card_id, req.user.id, new Date().toISOString());
 
     res.status(201).json({ id: result.lastInsertRowid, message: 'הבדיקה נרשמה בהצלחה' });
   } catch (err) {
@@ -247,13 +252,12 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       { key: 'operator_name', width: 22 },
       { key: 'bus_number', width: 16 },
       { key: 'validator_number', width: 18 },
-      { key: 'card_short_number', width: 16 },
       { key: 'card_number', width: 22 },
       { key: 'created_at', width: 24 }
     ];
 
     // Title Block
-    ws.mergeCells('A1:G1');
+    ws.mergeCells('A1:F1');
     const titleCell = ws.getCell('A1');
     titleCell.value = 'דוח בדיקות וולידטורים מפורט';
     titleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -261,7 +265,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     ws.getRow(1).height = 40;
 
-    ws.mergeCells('A2:G2');
+    ws.mergeCells('A2:F2');
     const subtitleCell = ws.getCell('A2');
     subtitleCell.value = `טווח תאריכים: ${date_from || 'הכל'} עד ${date_to || 'הכל'}  |  תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}`;
     subtitleCell.font = { name: 'Segoe UI', size: 11, italic: true, color: { argb: 'FF475569' } };
@@ -273,7 +277,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 
     // Table Headers
     const hebrewHeaders = [
-      'שם טכנאי', 'מפעיל / חברה', 'מספר אוטובוס', 'מספר וולידטור', 'מספר כרטיס קצר', 'מספר רב קו מלא', 'תאריך ושעת בדיקה'
+      'שם טכנאי', 'מפעיל / חברה', 'מספר אוטובוס', 'מספר וולידטור', 'מספר רב קו מלא', 'תאריך ושעת בדיקה'
     ];
 
     const headerRow = ws.addRow(hebrewHeaders);
@@ -292,7 +296,8 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 
     // Table Data
     checks.forEach((c, index) => {
-      const formattedDate = new Date(c.created_at).toLocaleString('he-IL', {
+      const dateStr = c.created_at.includes('T') ? c.created_at : c.created_at.replace(' ', 'T') + 'Z';
+      const formattedDate = new Date(dateStr).toLocaleString('he-IL', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit', second: '2-digit'
       });
@@ -302,7 +307,6 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
         c.operator_name || '',
         c.bus_number || '',
         c.validator_number || '',
-        c.card_short_number || '',
         c.card_number || '',
         formattedDate
       ];
@@ -323,7 +327,7 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
       });
     });
 
-    ws.autoFilter = `A4:G${checks.length + 4}`;
+    ws.autoFilter = `A4:F${checks.length + 4}`;
 
     const buf = await workbook.xlsx.writeBuffer();
     const filename = `דוח_בדיקות_וולידטורים_${date_from || 'all'}_${date_to || 'all'}.xlsx`;
