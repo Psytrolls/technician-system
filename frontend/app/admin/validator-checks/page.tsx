@@ -13,6 +13,7 @@ export default function AdminValidatorChecksPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   // Dropdown options
   const [operators, setOperators] = useState<any[]>([]);
@@ -166,14 +167,32 @@ export default function AdminValidatorChecksPage() {
     }
   }
 
-  function handleExportExcel() {
-    const params: Record<string, string> = {};
-    if (filterDateFrom) params.date_from = filterDateFrom;
-    if (filterDateTo) params.date_to = filterDateTo;
-    if (filterOperatorId) params.operator_id = filterOperatorId;
+  async function handleExportExcel() {
+    setExporting(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      if (filterDateFrom) params.set('date_from', filterDateFrom);
+      if (filterDateTo) params.set('date_to', filterDateTo);
+      if (filterOperatorId) params.set('operator_id', filterOperatorId);
 
-    const url = api.validatorChecks.exportChecksUrl(params);
-    window.open(url, '_blank');
+      const res = await fetch(`/api/validator-checks/export?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('שגיאה בהורדת הקובץ');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `דוח_בדיקות_וולידטורים_${filterDateFrom || 'הכל'}_${filterDateTo || 'הכל'}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'שגיאה בייצוא הקובץ');
+    } finally {
+      setExporting(false);
+    }
   }
 
   // Key KPI stats
@@ -296,9 +315,9 @@ export default function AdminValidatorChecksPage() {
                   </div>
                 </div>
 
-                <button className="btn btn-success" onClick={handleExportExcel} disabled={checks.length === 0}>
+                <button className="btn btn-success" onClick={handleExportExcel} disabled={exporting || checks.length === 0}>
                   <Download size={18} />
-                  יצוא Excel
+                  {exporting ? 'מייצא...' : 'יצוא Excel'}
                 </button>
               </div>
             </div>
